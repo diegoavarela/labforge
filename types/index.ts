@@ -244,7 +244,10 @@ export interface PluginActions {
   resetPlugin: () => void;
 }
 
-export type PluginStore = PluginState & PluginActions;
+export type PluginStore = PluginState & PluginActions & {
+  githubRepo: string | null;
+  setGithubRepo: (repo: string | null) => void;
+};
 
 // Library (multi-project support)
 export interface PluginData {

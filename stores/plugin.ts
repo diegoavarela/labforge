@@ -77,6 +77,7 @@ export const usePluginStore = create<PluginStore & { hydrate: (data: PluginData)
       chatMessages: [],
       changelog: [],
       dependencies: [],
+      githubRepo: null,
 
       hydrate: (data: PluginData) =>
         set({
@@ -93,6 +94,7 @@ export const usePluginStore = create<PluginStore & { hydrate: (data: PluginData)
           selectedItemType: null,
         }),
 
+      setGithubRepo: (repo: string | null) => set({ githubRepo: repo }),
       setPluginName: (name: string) => set({ pluginName: name }),
       selectItem: (id: string | null, type: ItemType | null) =>
         set({ selectedItemId: id, selectedItemType: type }),
@@ -302,6 +304,7 @@ export const usePluginStore = create<PluginStore & { hydrate: (data: PluginData)
           chatMessages: [],
           changelog: [],
           dependencies: [],
+          githubRepo: null,
         }),
     })
   )
