@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import useFetchModels from "@/hooks/useFetchModels";
 import { generateId } from "@/lib/utils/id";
 import dynamic from "next/dynamic";
 import { X, Plug, Square } from "lucide-react";
@@ -19,11 +20,6 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ),
 });
 
-const MODEL_OPTIONS = [
-  { value: "claude-sonnet-4", label: "Claude Sonnet 4" },
-  { value: "claude-opus-4", label: "Claude Opus 4" },
-  { value: "claude-haiku", label: "Claude Haiku" },
-];
 
 const CONTEXT_OPTIONS = [
   { value: "fork", label: "Fork" },
@@ -154,6 +150,7 @@ export default function AgentEditor({
 }: AgentEditorProps) {
   const mcps = usePluginStore((s) => s.mcps);
   const skills = usePluginStore((s) => s.skills);
+  const fetchedModels = useFetchModels();
 
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
@@ -222,7 +219,7 @@ export default function AgentEditor({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Select
           label="Model"
-          options={MODEL_OPTIONS}
+          options={fetchedModels.length > 0 ? fetchedModels.map(m => ({ value: m.id, label: m.name })) : [{ value: model, label: model }]}
           value={model}
           onChange={setModel}
         />

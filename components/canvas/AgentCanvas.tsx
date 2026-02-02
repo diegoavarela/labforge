@@ -6,6 +6,7 @@ import CopyMarkdown from "@/components/ui/CopyMarkdown";
 import { usePluginStore } from "@/stores/plugin";
 import { useShallow } from "zustand/react/shallow";
 import { sendChatMessage } from "@/lib/ai/assistant";
+import useFetchModels from "@/hooks/useFetchModels";
 
 export default function AgentCanvas({ agentId }: { agentId: string }) {
   const agent = usePluginStore((s) => s.agents.find((a) => a.id === agentId));
@@ -26,6 +27,7 @@ export default function AgentCanvas({ agentId }: { agentId: string }) {
   const [prompt, setPrompt] = useState("");
   const [generating, setGenerating] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const models = useFetchModels();
 
   const handleGenerate = useCallback(async () => {
     const text = prompt.trim();
@@ -103,9 +105,13 @@ Output format: plain text instructions for the agent. Be specific and actionable
                 onChange={(e) => updateAgent(agentId, { model: e.target.value })}
                 className="w-full bg-bg-tertiary border border-border-default rounded-lg px-3 py-1.5 text-xs text-text-primary focus:outline-none focus:border-border-focus"
               >
-                <option value="claude-sonnet-4-20250514">claude-sonnet-4</option>
-                <option value="claude-opus-4-20250514">claude-opus-4</option>
-                <option value="claude-haiku-3.5">claude-haiku-3.5</option>
+                {models.length > 0 ? (
+                  models.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))
+                ) : (
+                  <option value={agent.model}>{agent.model}</option>
+                )}
               </select>
             </div>
             <div>
