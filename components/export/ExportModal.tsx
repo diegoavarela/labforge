@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { Download, Github, Copy, Check, ExternalLink, AlertCircle } from "lucide-react";
+import { Download, Github, Copy, Check, ExternalLink, AlertCircle, Clipboard } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -28,6 +28,7 @@ export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
   const [selectedFile, setSelectedFile] = useState<PluginFile | null>(null);
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [copiedFile, setCopiedFile] = useState(false);
   const [pushing, setPushing] = useState(false);
   const [pushResult, setPushResult] = useState<{ url?: string; error?: string } | null>(null);
 
@@ -158,11 +159,24 @@ export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
             <label className="block text-xs font-medium text-text-muted mb-1 shrink-0">
               {selectedFile ? selectedFile.path : "File Preview"}
             </label>
-            <div className="flex-1 min-h-0 border border-border-default bg-bg-primary rounded-lg overflow-auto p-3">
+            <div className="group/preview relative flex-1 min-h-0 border border-border-default bg-bg-primary rounded-lg overflow-auto p-3">
               {selectedFile ? (
-                <pre className="text-xs font-mono text-text-secondary whitespace-pre-wrap break-words">
-                  {selectedFile.content}
-                </pre>
+                <>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(selectedFile.content);
+                      setCopiedFile(true);
+                      setTimeout(() => setCopiedFile(false), 2000);
+                    }}
+                    className="sticky top-0 float-right p-1 rounded text-text-muted hover:text-text-primary hover:bg-bg-hover transition-all opacity-0 group-hover/preview:opacity-60 hover:!opacity-100 cursor-pointer z-10"
+                    title="Copy file contents"
+                  >
+                    {copiedFile ? <Check size={12} className="text-green-400" /> : <Clipboard size={12} />}
+                  </button>
+                  <pre className="text-xs font-mono text-text-secondary whitespace-pre-wrap break-words">
+                    {selectedFile.content}
+                  </pre>
+                </>
               ) : (
                 <p className="text-text-muted text-xs text-center mt-12">
                   Click a file to preview its contents

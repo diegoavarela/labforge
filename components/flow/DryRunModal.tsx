@@ -129,7 +129,7 @@ export default function DryRunModal({ isOpen, onClose, command }: Props) {
         </div>
 
         {/* Steps */}
-        <div className="space-y-1">
+        <div className="space-y-1 max-h-[60vh] overflow-y-auto">
           {result.steps.map((step, i) => (
             <StepRow key={step.nodeId} step={step} index={i} />
           ))}

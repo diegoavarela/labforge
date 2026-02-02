@@ -82,28 +82,6 @@ Output format: plain text instructions for the agent. Be specific and actionable
               onChange={(e) => updateAgent(agentId, { name: e.target.value })}
               className="text-xl font-semibold bg-transparent text-text-primary focus:outline-none border-b border-transparent focus:border-agent w-full"
             />
-            <CopyMarkdown
-              label="Copy .md"
-              getContent={() => {
-                const skillNames = skills.filter(s => agent.skillIds.includes(s.id)).map(s => s.name);
-                const mcpNames = mcps.filter(m => agent.mcpIds.includes(m.id)).map(m => m.name);
-                const fm = [
-                  "---",
-                  `name: ${agent.name}`,
-                  `description: ${agent.description}`,
-                  `model: ${agent.model}`,
-                  `context: ${agent.context}`,
-                  `allowedTools:`,
-                  ...agent.allowedTools.map(t => `  - ${t}`),
-                  `mcps:`,
-                  ...mcpNames.map(m => `  - ${m}`),
-                  `skills:`,
-                  ...skillNames.map(s => `  - ${s}`),
-                  "---",
-                ].join("\n");
-                return `${fm}\n\n${agent.instructions}`;
-              }}
-            />
           </div>
           <input
             value={agent.description}
@@ -166,13 +144,39 @@ Output format: plain text instructions for the agent. Be specific and actionable
                 {generating ? "..." : "Generate"}
               </button>
             </div>
-            <textarea
-              value={agent.instructions}
-              onChange={(e) => updateAgent(agentId, { instructions: e.target.value })}
-              placeholder="Agent instructions..."
-              rows={4}
-              className="w-full bg-bg-tertiary border border-border-default rounded-lg px-3 py-2 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-focus resize-none font-mono"
-            />
+            <div className="group/content relative">
+              <textarea
+                value={agent.instructions}
+                onChange={(e) => updateAgent(agentId, { instructions: e.target.value })}
+                placeholder="Agent instructions..."
+                rows={4}
+                className="w-full bg-bg-tertiary border border-border-default rounded-lg px-3 py-2 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-focus resize-none font-mono"
+              />
+              <div className="absolute top-2 right-2 opacity-0 group-hover/content:opacity-100 transition-opacity">
+                <CopyMarkdown
+                  label=""
+                  getContent={() => {
+                    const skillNames = skills.filter(s => agent.skillIds.includes(s.id)).map(s => s.name);
+                    const mcpNames = mcps.filter(m => agent.mcpIds.includes(m.id)).map(m => m.name);
+                    const fm = [
+                      "---",
+                      `name: ${agent.name}`,
+                      `description: ${agent.description}`,
+                      `model: ${agent.model}`,
+                      `context: ${agent.context}`,
+                      `allowedTools:`,
+                      ...agent.allowedTools.map(t => `  - ${t}`),
+                      `mcps:`,
+                      ...mcpNames.map(m => `  - ${m}`),
+                      `skills:`,
+                      ...skillNames.map(s => `  - ${s}`),
+                      "---",
+                    ].join("\n");
+                    return `${fm}\n\n${agent.instructions}`;
+                  }}
+                />
+              </div>
+            </div>
           </div>
         </div>
 

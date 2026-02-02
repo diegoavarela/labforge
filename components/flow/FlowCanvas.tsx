@@ -271,9 +271,28 @@ function FlowCanvasInner({ command, onUpdate }: FlowCanvasProps) {
           />
           {minimapVisible && (
             <MiniMap
-              nodeColor={() => "#525252"}
-              maskColor="rgba(0,0,0,0.7)"
-              className="!bg-bg-secondary !border-border-default"
+              nodeColor={(node) => {
+                const colors: Record<string, string> = {
+                  start: "#22c55e",     // green-500
+                  end: "#ef4444",       // red-500
+                  step: "#737373",      // neutral-500
+                  agent: "#a855f7",     // purple-500
+                  skill: "#06b6d4",     // cyan-500
+                  mcp: "#06b6d4",       // cyan-500
+                  branch: "#f59e0b",    // amber-500
+                  condition: "#f59e0b", // amber-500
+                  loop: "#ec4899",      // pink-500
+                  parallel: "#f97316",  // orange-500
+                  shell: "#525252",     // neutral-600
+                  prompt: "#eab308",    // yellow-500
+                  variable: "#38bdf8",  // sky-400
+                  template: "#a3a3a3",  // neutral-400
+                  notify: "#ec4899",    // pink-500
+                };
+                return colors[node.type || ""] || "#737373";
+              }}
+              maskColor="rgba(0,0,0,0.6)"
+              className="!bg-bg-secondary !border-border-default !rounded-lg"
             />
           )}
         </ReactFlow>
