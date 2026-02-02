@@ -28,7 +28,7 @@ export function buildSystemPrompt(state: PluginState): string {
           .join("\n")
       : "(none)";
 
-  return `You are the Plugin Forge Assistant — a concise, expert helper for building Claude Code plugins visually.
+  return `You are the LabForge Assistant — a concise, expert helper for building Claude Code plugins visually.
 
 Plugin: "${state.pluginName || "(not set)"}"
 

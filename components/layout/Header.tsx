@@ -36,8 +36,8 @@ export default function Header() {
     <>
       <header className="bg-bg-secondary border-b border-border-default px-4 py-2 flex items-center gap-4 h-11">
         {/* Brand */}
-        <span className="text-sm font-semibold text-text-primary tracking-tight shrink-0">
-          Plugin Forge
+        <span className="text-sm font-bold tracking-tighter shrink-0 font-mono">
+          <span className="text-accent-orange">Lab</span><span className="text-text-primary">Forge</span>
         </span>
 
         <div className="w-px h-4 bg-border-default" />

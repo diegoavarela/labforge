@@ -77,7 +77,7 @@ export default function WelcomeCanvas() {
         {/* Title */}
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-semibold text-text-primary tracking-tight">
-            Plugin Forge
+            LabForge
           </h1>
           <p className="text-sm text-text-secondary">
             Describe what you want to build in the chat, or start by creating:

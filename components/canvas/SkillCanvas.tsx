@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Sparkles, ArrowRight, Wand2, Loader2 } from "lucide-react";
+import { Sparkles, ArrowRight, Wand2, Loader2, Maximize2, Minimize2 } from "lucide-react";
 import CopyMarkdown from "@/components/ui/CopyMarkdown";
 import { usePluginStore } from "@/stores/plugin";
 import { useShallow } from "zustand/react/shallow";
@@ -18,6 +18,7 @@ export default function SkillCanvas({ skillId }: { skillId: string }) {
 
   const [prompt, setPrompt] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const handleGenerate = useCallback(async () => {
     const text = prompt.trim();
@@ -119,15 +120,15 @@ Output format: raw markdown content for the skill file. Start with a heading.`;
             </button>
           </div>
 
-          <div className="group/content relative">
+          <div>
             <textarea
               value={skill.content}
               onChange={(e) => updateSkill(skillId, { content: e.target.value })}
               placeholder="# Skill Name&#10;&#10;Describe the skill instructions here..."
-              rows={16}
-              className="w-full bg-bg-tertiary border border-border-default rounded-lg px-4 py-3 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-focus resize-none font-mono leading-relaxed"
+              rows={expanded ? 40 : 16}
+              className={`w-full bg-bg-tertiary border border-border-default rounded-lg px-4 py-3 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-focus resize-none font-mono leading-relaxed transition-all ${expanded ? "min-h-[600px]" : "min-h-[200px]"}`}
             />
-            <div className="absolute top-2 right-2 opacity-0 group-hover/content:opacity-100 transition-opacity">
+            <div className="flex justify-end gap-1 mt-1">
               <CopyMarkdown
                 label=""
                 getContent={() => {
@@ -135,6 +136,13 @@ Output format: raw markdown content for the skill file. Start with a heading.`;
                   return `${fm}\n\n${skill.content}`;
                 }}
               />
+              <button
+                onClick={() => setExpanded(!expanded)}
+                className="p-1 rounded text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors cursor-pointer"
+                title={expanded ? "Collapse" : "Expand"}
+              >
+                {expanded ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+              </button>
             </div>
           </div>
         </div>

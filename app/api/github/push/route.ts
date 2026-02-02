@@ -175,7 +175,7 @@ export async function POST(req: NextRequest) {
     const commitRes = await githubFetch(`${apiBase}/git/commits`, token, {
       method: "POST",
       body: JSON.stringify({
-        message: "Add plugin files via Plugin Forge",
+        message: "Add plugin files via LabForge",
         tree: treeData.sha,
         parents: [baseSha],
       }),
