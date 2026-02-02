@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LabForge
 
-## Getting Started
+Visual plugin builder for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Design commands, agents, skills, hooks, and MCP integrations through a node-based workflow editor — then export ready-to-use plugins.
 
-First, run the development server:
+## Features
+
+- **Visual workflow editor** — Drag-and-drop node graph for building command flows (branching, loops, parallel execution, shell steps, prompts, and more)
+- **Agent designer** — Configure AI agents with custom models, tools, skills, and instructions
+- **Skill editor** — Write and organize reusable skills with a built-in Monaco code editor
+- **MCP integrations** — Browse, configure, and wire Model Context Protocol servers
+- **Hook system** — Define event-driven actions triggered by bash commands, MCP calls, or agents
+- **Plugin library** — Manage multiple plugins, track versions, import/export
+- **GitHub push** — Push plugins directly to GitHub repositories
+- **AI assistant** — Built-in chat panel powered by Claude for inline help
+
+## Tech stack
+
+Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 · React Flow · Monaco Editor · Zustand · Drizzle ORM · PostgreSQL (Neon)
+
+## Getting started
+
+### Prerequisites
+
+- Node.js 20+
+- PostgreSQL (or a [Neon](https://neon.tech) database)
+- An [Anthropic API key](https://console.anthropic.com/)
+
+### Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/diegoavarela/labforge.git
+cd labforge
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Copy the example env file and fill in your values:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cp .env.example .env.local
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Required | Description |
+|---|---|---|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `LABFORGE_ANTHROPIC_KEY` | Yes | Anthropic API key for the chat assistant |
+| `AUTH_GITHUB_ID` | For GitHub push | GitHub OAuth app client ID |
+| `AUTH_GITHUB_SECRET` | For GitHub push | GitHub OAuth app client secret |
+| `AUTH_SECRET` | For GitHub push | NextAuth secret (`openssl rand -base64 32`) |
+| `GITHUB_TOKEN` | No | Higher rate limits for the skills registry |
 
-## Learn More
+Run the database migrations:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+pnpm drizzle-kit push
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Start the dev server:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+pnpm dev
+```
 
-## Deploy on Vercel
+Open [http://localhost:3000](http://localhost:3000).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Project structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+app/            Next.js pages and API routes
+components/     React components (canvas, flow, layout, ui, ...)
+stores/         Zustand state stores
+lib/            Utilities (AI, auth, db, generator, validator, ...)
+types/          TypeScript type definitions
+drizzle/        Database migrations
+```
+
+## License
+
+[MIT](LICENSE)
