@@ -1,0 +1,148 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* Light mode (default) */
+:root {
+  --bg-primary: #fafafa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f4f4f5;
+  --bg-hover: #e4e4e7;
+  --border-default: #e4e4e7;
+  --border-focus: #D97757;
+  --text-primary: #09090b;
+  --text-secondary: #52525b;
+  --text-muted: #a1a1aa;
+
+  --color-skill: #3b82f6;
+  --color-agent: #a855f7;
+  --color-command: #22c55e;
+  --color-hook: #f97316;
+  --color-mcp: #22d3ee;
+
+  color-scheme: light;
+}
+
+/* Dark mode */
+.dark {
+  --bg-primary: #09090b;
+  --bg-secondary: #18181b;
+  --bg-tertiary: #27272a;
+  --bg-hover: #3f3f46;
+  --border-default: #27272a;
+  --border-focus: #D97757;
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-muted: #52525b;
+
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-tertiary: var(--bg-tertiary);
+  --color-bg-hover: var(--bg-hover);
+  --color-border-default: var(--border-default);
+  --color-border-focus: var(--border-focus);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-accent-orange: #D97757;
+  --color-accent-blue: #3b82f6;
+  --color-accent-purple: #a855f7;
+  --color-accent-cyan: #22d3ee;
+  --color-accent-green: #22c55e;
+  --color-accent-pink: #ec4899;
+  --color-skill: #3b82f6;
+  --color-agent: #a855f7;
+  --color-command: #22c55e;
+  --color-hook: #f97316;
+  --color-mcp: #22d3ee;
+  --font-sans: "Geist", "Inter", system-ui, sans-serif;
+  --font-mono: "Geist Mono", "JetBrains Mono", monospace;
+}
+
+/* Markdown preview prose overrides */
+.prose {
+  --tw-prose-body: var(--text-secondary);
+  --tw-prose-headings: var(--text-primary);
+  --tw-prose-lead: var(--text-secondary);
+  --tw-prose-links: #D97757;
+  --tw-prose-bold: var(--text-primary);
+  --tw-prose-counters: var(--text-muted);
+  --tw-prose-bullets: var(--text-muted);
+  --tw-prose-hr: var(--border-default);
+  --tw-prose-quotes: var(--text-secondary);
+  --tw-prose-quote-borders: #D97757;
+  --tw-prose-captions: var(--text-muted);
+  --tw-prose-code: #D97757;
+  --tw-prose-pre-code: var(--text-primary);
+  --tw-prose-pre-bg: var(--bg-tertiary);
+  --tw-prose-th-borders: var(--border-default);
+  --tw-prose-td-borders: var(--border-default);
+}
+
+.prose code::before,
+.prose code::after {
+  content: none;
+}
+
+.prose code {
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.85em;
+  font-weight: 400;
+}
+
+.prose pre {
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+}
+
+.prose a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  font-family: var(--font-sans);
+  letter-spacing: -0.02em;
+}
+
+.prose table {
+  font-size: 0.85em;
+}
+
+.prose th {
+  text-align: left;
+  font-weight: 600;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
