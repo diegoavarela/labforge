@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "LabForge",
   description: "LabForge - Visual Plugin Builder",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

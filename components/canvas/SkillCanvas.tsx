@@ -64,13 +64,6 @@ Output format: raw markdown content for the skill file. Start with a heading.`;
               onChange={(e) => updateSkill(skillId, { name: e.target.value })}
               className="text-xl font-semibold bg-transparent text-text-primary focus:outline-none border-b border-transparent focus:border-skill w-full"
             />
-            <CopyMarkdown
-              label="Copy .md"
-              getContent={() => {
-                const fm = `---\nname: ${skill.name}\ndescription: ${skill.description}\n---`;
-                return `${fm}\n\n${skill.content}`;
-              }}
-            />
           </div>
           <input
             value={skill.description}
@@ -126,13 +119,24 @@ Output format: raw markdown content for the skill file. Start with a heading.`;
             </button>
           </div>
 
-          <textarea
-            value={skill.content}
-            onChange={(e) => updateSkill(skillId, { content: e.target.value })}
-            placeholder="# Skill Name&#10;&#10;Describe the skill instructions here..."
-            rows={16}
-            className="w-full bg-bg-tertiary border border-border-default rounded-lg px-4 py-3 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-focus resize-none font-mono leading-relaxed"
-          />
+          <div className="group/content relative">
+            <textarea
+              value={skill.content}
+              onChange={(e) => updateSkill(skillId, { content: e.target.value })}
+              placeholder="# Skill Name&#10;&#10;Describe the skill instructions here..."
+              rows={16}
+              className="w-full bg-bg-tertiary border border-border-default rounded-lg px-4 py-3 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-focus resize-none font-mono leading-relaxed"
+            />
+            <div className="absolute top-2 right-2 opacity-0 group-hover/content:opacity-100 transition-opacity">
+              <CopyMarkdown
+                label=""
+                getContent={() => {
+                  const fm = `---\nname: ${skill.name}\ndescription: ${skill.description}\n---`;
+                  return `${fm}\n\n${skill.content}`;
+                }}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Used by */}

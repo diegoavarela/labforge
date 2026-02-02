@@ -17,14 +17,20 @@ export default function CopyMarkdown({ getContent, label = "Copy .md" }: CopyMar
     setTimeout(() => setCopied(false), 2000);
   }, [getContent]);
 
+  const isIconOnly = !label;
+
   return (
     <button
       onClick={handleCopy}
-      className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-medium text-text-muted border border-border-default rounded-lg hover:bg-bg-hover hover:text-text-primary transition-colors cursor-pointer"
-      title={label}
+      className={`flex items-center gap-1.5 text-text-muted hover:text-text-primary transition-colors cursor-pointer ${
+        isIconOnly
+          ? "p-1.5 rounded hover:bg-bg-hover"
+          : "px-2.5 py-1 text-[10px] font-medium border border-border-default rounded-lg hover:bg-bg-hover"
+      }`}
+      title={label || "Copy .md"}
     >
-      {copied ? <Check size={10} className="text-green-400" /> : <Copy size={10} />}
-      {copied ? "Copied!" : label}
+      {copied ? <Check size={isIconOnly ? 12 : 10} className="text-green-400" /> : <Copy size={isIconOnly ? 12 : 10} />}
+      {!isIconOnly && (copied ? "Copied!" : label)}
     </button>
   );
 }
