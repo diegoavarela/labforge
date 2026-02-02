@@ -2,12 +2,11 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { Download, Github, Copy, Check } from "lucide-react";
+import { Download, Github, Copy, Check, ExternalLink, AlertCircle } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import FileTreePreview from "./FileTreePreview";
-import GitHubPushForm from "./GitHubPushForm";
 import { usePluginStore } from "@/stores/plugin";
 import { generatePluginStructure } from "@/lib/generator/plugin";
 import { generateAndDownloadZip } from "@/lib/generator/zip";
@@ -24,11 +23,13 @@ interface ExportModalProps {
 export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
   const store = usePluginStore();
   const { data: session } = useSession();
-  const [showGitHubForm, setShowGitHubForm] = useState(false);
+  const githubRepo = usePluginStore((s) => s.githubRepo);
   const [pluginName, setPluginName] = useState(store.pluginName || "my-plugin");
   const [selectedFile, setSelectedFile] = useState<PluginFile | null>(null);
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [pushing, setPushing] = useState(false);
+  const [pushResult, setPushResult] = useState<{ url?: string; error?: string } | null>(null);
 
   const files = useMemo(() => {
     return generatePluginStructure({
@@ -89,6 +90,41 @@ export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [pluginName]);
+
+  const handlePush = useCallback(async () => {
+    if (!githubRepo) return;
+    setPushing(true);
+    setPushResult(null);
+    try {
+      const res = await fetch("/api/github/push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          repoName: githubRepo,
+          files: files.map((f) => ({ path: f.path, content: f.content })),
+          isPrivate: false,
+          existingRepo: true,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPushResult({ error: data.error || "Failed to push" });
+      } else {
+        setPushResult({ url: data.url });
+      }
+    } catch (err) {
+      setPushResult({ error: err instanceof Error ? err.message : "Unknown error" });
+    } finally {
+      setPushing(false);
+    }
+  }, [githubRepo, files]);
+
+  const pushDisabled = !session || !githubRepo;
+  const pushTooltip = !session
+    ? "Login required"
+    : !githubRepo
+      ? "Select a repo first"
+      : null;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Export Plugin" size="3xl">
@@ -160,16 +196,16 @@ export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
             <Button
               variant="secondary"
               size="sm"
-              disabled={!session}
-              onClick={() => setShowGitHubForm(!showGitHubForm)}
+              disabled={pushDisabled || pushing}
+              onClick={handlePush}
               className="w-full"
             >
               <Github size={14} />
-              Push to GitHub
+              {pushing ? "Pushing..." : githubRepo ? `Push to ${githubRepo.split("/")[1]}` : "Push to GitHub"}
             </Button>
-            {!session && (
+            {pushTooltip && (
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-bg-tertiary border border-border-default rounded-lg text-[10px] text-text-muted whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
-                Login required
+                {pushTooltip}
               </div>
             )}
           </div>
@@ -180,9 +216,25 @@ export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
           </Button>
         </div>
 
-        {showGitHubForm && session && (
-          <div className="pt-3 border-t border-border-default">
-            <GitHubPushForm files={files} defaultName={pluginName} />
+        {pushResult?.url && (
+          <div className="space-y-2 p-3 border border-green-500/30 bg-green-500/5">
+            <p className="text-xs font-mono text-green-400">Successfully pushed to GitHub!</p>
+            <a
+              href={pushResult.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-xs font-mono text-accent-blue hover:underline"
+            >
+              <ExternalLink size={12} />
+              {pushResult.url}
+            </a>
+          </div>
+        )}
+
+        {pushResult?.error && (
+          <div className="flex items-start gap-2 p-2 border border-red-500/30 bg-red-500/5 text-xs font-mono text-red-400">
+            <AlertCircle size={14} className="shrink-0 mt-0.5" />
+            {pushResult.error}
           </div>
         )}
       </div>
