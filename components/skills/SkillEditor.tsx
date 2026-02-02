@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { generateId } from "@/lib/utils/id";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Input from "@/components/ui/Input";
@@ -85,7 +86,7 @@ export default function SkillEditor({ initial, onSave, onCancel, onFullscreenCha
   function handleSave() {
     if (!name.trim()) return;
     const skill: Skill = {
-      id: initial?.id ?? crypto.randomUUID(),
+      id: initial?.id ?? generateId(),
       name: name.trim(),
       description: description.trim(),
       content,

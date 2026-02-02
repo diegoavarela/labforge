@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { generateId } from "@/lib/utils/id";
 import { Plus, Check } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
@@ -80,7 +81,7 @@ export default function ImportModal({ isOpen, onClose }: Props) {
     }
 
     addDependency({
-      id: crypto.randomUUID(),
+      id: generateId(),
       sourcePluginId: currentPlugin.id,
       sourcePluginName: currentPlugin.pluginName,
       importedSkillIds: skillsToImport.map((s) => s.id),

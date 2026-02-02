@@ -128,6 +128,12 @@ body {
   min-height: 100vh;
 }
 
+/* AI loading shimmer */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { generateId } from "@/lib/utils/id";
 import type { LibraryStore, PluginData, SavedPlugin } from "@/types";
 
 interface DbPlugin {
@@ -117,7 +118,7 @@ export const useLibraryStore = create<LibraryStore & { hydrate: () => Promise<vo
     },
 
     createNewPlugin: () => {
-      const tempId = crypto.randomUUID();
+      const tempId = generateId();
       const now = Date.now();
       const data: PluginData = {
         pluginName: "",
@@ -150,7 +151,7 @@ export const useLibraryStore = create<LibraryStore & { hydrate: () => Promise<vo
     },
 
     importAsNewPlugin: (data: PluginData) => {
-      const tempId = crypto.randomUUID();
+      const tempId = generateId();
       const now = Date.now();
 
       set((s) => ({

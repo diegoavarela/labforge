@@ -1,6 +1,7 @@
 "use client";
 
 import { Terminal, Bot, Sparkles, Plug, Webhook } from "lucide-react";
+import { generateId } from "@/lib/utils/id";
 import { usePluginStore } from "@/stores/plugin";
 import { useShallow } from "zustand/react/shallow";
 import type { ItemType } from "@/types";
@@ -24,7 +25,7 @@ export default function WelcomeCanvas() {
   const addSkill = usePluginStore((s) => s.addSkill);
 
   const handleQuickCreate = (type: ItemType) => {
-    const id = crypto.randomUUID();
+    const id = generateId();
     switch (type) {
       case "command":
         addCommand({ id, name: "/new-command", description: "", nodes: [], edges: [] });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { generateId } from "@/lib/utils/id";
 import {
   Search,
   Plus,
@@ -112,7 +113,7 @@ export default function InventoryPanel() {
 
   const handleAdd = useCallback(
     (type: ItemType) => {
-      const id = crypto.randomUUID();
+      const id = generateId();
       switch (type) {
         case "command":
           addCommand({ id, name: "/new-command", description: "", nodes: [], edges: [] });

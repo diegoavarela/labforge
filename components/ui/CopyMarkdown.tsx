@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { Copy, Check } from "lucide-react";
+import { copyToClipboard } from "@/lib/utils/clipboard";
 
 interface CopyMarkdownProps {
   getContent: () => string;
@@ -12,7 +13,7 @@ export default function CopyMarkdown({ getContent, label = "Copy .md" }: CopyMar
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(getContent());
+    copyToClipboard(getContent());
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [getContent]);

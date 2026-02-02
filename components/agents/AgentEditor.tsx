@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { generateId } from "@/lib/utils/id";
 import dynamic from "next/dynamic";
 import { X, Plug, Square } from "lucide-react";
 import Input from "@/components/ui/Input";
@@ -193,7 +194,7 @@ export default function AgentEditor({
   function handleSave() {
     if (!name.trim()) return;
     const agent: Agent = {
-      id: initial?.id ?? crypto.randomUUID(),
+      id: initial?.id ?? generateId(),
       name: name.trim(),
       description: description.trim(),
       model,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Bot, X, Plus, ArrowRight, Wand2, Loader2 } from "lucide-react";
+import { Bot, X, Plus, ArrowRight, Wand2, Loader2, Maximize2, Minimize2 } from "lucide-react";
 import CopyMarkdown from "@/components/ui/CopyMarkdown";
 import { usePluginStore } from "@/stores/plugin";
 import { useShallow } from "zustand/react/shallow";
@@ -25,6 +25,7 @@ export default function AgentCanvas({ agentId }: { agentId: string }) {
 
   const [prompt, setPrompt] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const handleGenerate = useCallback(async () => {
     const text = prompt.trim();
@@ -144,15 +145,15 @@ Output format: plain text instructions for the agent. Be specific and actionable
                 {generating ? "..." : "Generate"}
               </button>
             </div>
-            <div className="group/content relative">
+            <div>
               <textarea
                 value={agent.instructions}
                 onChange={(e) => updateAgent(agentId, { instructions: e.target.value })}
                 placeholder="Agent instructions..."
-                rows={4}
-                className="w-full bg-bg-tertiary border border-border-default rounded-lg px-3 py-2 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-focus resize-none font-mono"
+                rows={expanded ? 30 : 12}
+                className={`w-full bg-bg-tertiary border border-border-default rounded-lg px-3 py-2 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-focus font-mono resize-none transition-all ${expanded ? "min-h-[500px]" : "min-h-[200px]"}`}
               />
-              <div className="absolute top-2 right-2 opacity-0 group-hover/content:opacity-100 transition-opacity">
+              <div className="flex justify-end gap-1 mt-1">
                 <CopyMarkdown
                   label=""
                   getContent={() => {
@@ -175,6 +176,13 @@ Output format: plain text instructions for the agent. Be specific and actionable
                     return `${fm}\n\n${agent.instructions}`;
                   }}
                 />
+                <button
+                  onClick={() => setExpanded(!expanded)}
+                  className="p-1 rounded text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors cursor-pointer"
+                  title={expanded ? "Collapse" : "Expand"}
+                >
+                  {expanded ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+                </button>
               </div>
             </div>
           </div>

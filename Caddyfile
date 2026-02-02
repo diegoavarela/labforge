@@ -1,4 +1,3 @@
-labforge.local {
-	tls internal
+http://labforge.test {
 	reverse_proxy app:3000
 }

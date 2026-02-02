@@ -2,6 +2,7 @@
 
 import { useMemo, useCallback, useState } from "react";
 import { CheckCircle2, AlertTriangle, XCircle, Copy, Check } from "lucide-react";
+import { copyToClipboard } from "@/lib/utils/clipboard";
 import Modal from "@/components/ui/Modal";
 import { usePluginStore } from "@/stores/plugin";
 import { simulateCommand } from "@/lib/simulator/command";
@@ -77,7 +78,7 @@ export default function DryRunModal({ isOpen, onClose, command }: Props) {
   }, [result, command.name]);
 
   const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(formatReport());
+    copyToClipboard(formatReport());
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [formatReport]);

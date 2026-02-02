@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { Download, Github, Copy, Check, ExternalLink, AlertCircle, Clipboard } from "lucide-react";
+import { copyToClipboard } from "@/lib/utils/clipboard";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -87,7 +88,7 @@ export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-|-$/g, "");
-    navigator.clipboard.writeText(`claude plugin add github:user/${slug}`);
+    copyToClipboard(`claude plugin add github:user/${slug}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [pluginName]);
@@ -164,7 +165,7 @@ export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
                 <>
                   <button
                     onClick={() => {
-                      navigator.clipboard.writeText(selectedFile.content);
+                      copyToClipboard(selectedFile.content);
                       setCopiedFile(true);
                       setTimeout(() => setCopiedFile(false), 2000);
                     }}

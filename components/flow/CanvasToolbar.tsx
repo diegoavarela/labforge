@@ -2,6 +2,7 @@
 
 import { ZoomIn, ZoomOut, Maximize2, Map, FileDown, Play, Copy, Check } from "lucide-react";
 import { useState, useCallback } from "react";
+import { copyToClipboard } from "@/lib/utils/clipboard";
 
 interface CanvasToolbarProps {
   onZoomIn: () => void;
@@ -30,7 +31,7 @@ export default function CanvasToolbar({
 
   const handleCopy = useCallback(() => {
     if (!onCopyMarkdown) return;
-    navigator.clipboard.writeText(onCopyMarkdown());
+    copyToClipboard(onCopyMarkdown());
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [onCopyMarkdown]);

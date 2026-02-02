@@ -13,9 +13,7 @@ export interface ParsedPlugin {
   dependencies?: import("@/types").PluginDependency[];
 }
 
-function generateId(): string {
-  return crypto.randomUUID();
-}
+import { generateId } from "@/lib/utils/id";
 
 function parseFrontmatter(content: string): { meta: Record<string, string>; body: string } {
   const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);

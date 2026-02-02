@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import Modal from "@/components/ui/Modal";
 import { Copy, Check } from "lucide-react";
+import { copyToClipboard } from "@/lib/utils/clipboard";
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -18,7 +19,7 @@ export default function ExportModal({
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(markdown);
+    copyToClipboard(markdown);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [markdown]);

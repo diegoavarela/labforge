@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect } from "react";
+import { generateId } from "@/lib/utils/id";
 import { Send, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -43,7 +44,7 @@ export default function ChatPanel() {
     (action: AssistantAction) => {
       const data = action.data as Record<string, unknown>;
       // Use AI-provided ID if present (for cross-references), otherwise generate
-      const id = (data.id as string) || crypto.randomUUID();
+      const id = (data.id as string) || generateId();
 
       switch (action.type) {
         case "create_skill":
@@ -131,7 +132,7 @@ export default function ChatPanel() {
     setInput("");
 
     const userMessage = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       role: "user" as const,
       content: text,
       timestamp: Date.now(),
@@ -167,7 +168,7 @@ export default function ChatPanel() {
       }
 
       addChatMessage({
-        id: crypto.randomUUID(),
+        id: generateId(),
         role: "assistant",
         content: textContent,
         timestamp: Date.now(),
@@ -193,6 +194,12 @@ export default function ChatPanel() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
+      {/* AI working indicator */}
+      {isLoading && (
+        <div className="h-0.5 w-full bg-bg-tertiary overflow-hidden shrink-0">
+          <div className="h-full w-1/3 bg-accent-orange rounded-full animate-[shimmer_1.2s_ease-in-out_infinite]" />
+        </div>
+      )}
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 text-xs">
         {chatMessages.length === 0 && !isLoading && (

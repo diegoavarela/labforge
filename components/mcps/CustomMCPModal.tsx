@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { generateId } from "@/lib/utils/id";
 import Modal from "@/components/ui/Modal";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
@@ -67,7 +68,7 @@ export default function CustomMCPModal({
   function handleAdd() {
     if (!name.trim()) return;
     const mcp: MCP = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       name: name.trim(),
       description: `Custom MCP: ${sourceValue}`,
       source: sourceValue,
