@@ -19,9 +19,8 @@ interface Props {
 }
 
 export default function ValidationReport({ report, onNavigate }: Props) {
-  const [expanded, setExpanded] = useState(true);
-
   const errors = report.issues.filter((i) => i.severity === "error");
+  const [expanded, setExpanded] = useState(false);
   const warnings = report.issues.filter((i) => i.severity === "warning");
   const infos = report.issues.filter((i) => i.severity === "info");
 
