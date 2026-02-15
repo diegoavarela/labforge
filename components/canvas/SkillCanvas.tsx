@@ -381,12 +381,69 @@ export default function SkillCanvas({ skillId }: { skillId: string }) {
 }
 
 // Distribution Panel Component
-function DistributionPanel({ skill, onSaveLocal, saving, saveResult }: {
-  skill: { name: string; description: string };
+function DistributionPanel({ skill, onSaveLocal, saving, saveResult, onPublish }: {
+  skill: { name: string; description: string; skillMd: string; scripts: { filename: string; content: string; language: string }[] };
   onSaveLocal: () => void;
   saving: boolean;
   saveResult: string | null;
+  onPublish: () => void;
 }) {
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<string | null>(null);
+  const addSkill = useSkillStore((s) => s.addSkill);
+
+  const handleExportZip = async () => {
+    setExporting(true);
+    try {
+      const frontmatter = `---\nname: ${skill.name}\ndescription: ${skill.description}\n---\n\n`;
+      const res = await fetch("/api/skills/export-zip", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: skill.name, skillMd: frontmatter + skill.skillMd, scripts: skill.scripts }),
+      });
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${skill.name}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {}
+    setExporting(false);
+  };
+
+  const handleImportZip = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/skills/import-zip", { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.error) {
+        setImportResult(`Error: ${data.error}`);
+      } else {
+        addSkill({
+          id: generateId(),
+          name: data.name,
+          description: data.description || "",
+          skillMd: data.skillMd,
+          scripts: data.scripts || [],
+          metadata: {},
+          source: "local",
+        });
+        setImportResult(`Imported: ${data.name}`);
+      }
+    } catch (err) {
+      setImportResult(`Error: ${err instanceof Error ? err.message : "Import failed"}`);
+    }
+    setImporting(false);
+    e.target.value = "";
+  };
+
   return (
     <div className="h-full overflow-y-auto p-6">
       <div className="max-w-xl mx-auto space-y-6">
@@ -427,38 +484,51 @@ function DistributionPanel({ skill, onSaveLocal, saving, saveResult }: {
           </div>
         </div>
 
-        {/* Team */}
-        <div className="bg-bg-secondary border border-border-default rounded-xl p-5 space-y-3 opacity-60">
+        {/* Team — ZIP export/import */}
+        <div className="bg-bg-secondary border border-border-default rounded-xl p-5 space-y-3">
           <div className="flex items-center gap-2">
             <Users size={16} className="text-blue-400" />
-            <h3 className="text-sm font-semibold text-text-primary">Team</h3>
-            <span className="text-[10px] px-1.5 py-0.5 bg-bg-tertiary text-text-muted rounded-md font-medium">Coming Soon</span>
+            <h3 className="text-sm font-semibold text-text-primary">Team Sharing</h3>
+            <span className="text-[10px] px-1.5 py-0.5 bg-blue-500/10 text-blue-400 rounded-md font-medium">Ready</span>
           </div>
           <p className="text-xs text-text-secondary">
-            Share privately with your organization via an internal skill registry.
+            Export as ZIP to share with your team, or import a skill ZIP from a colleague.
           </p>
-          <button
-            disabled
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-bg-tertiary text-text-muted border border-border-default rounded-lg cursor-not-allowed"
-          >
-            <Users size={12} />
-            Share with Team
-          </button>
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              onClick={handleExportZip}
+              disabled={exporting}
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              {exporting ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
+              Export ZIP
+            </button>
+            <label className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors cursor-pointer">
+              {importing ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+              Import ZIP
+              <input type="file" accept=".zip" onChange={handleImportZip} className="hidden" />
+            </label>
+          </div>
+          {importResult && (
+            <span className={`text-[10px] px-2 py-1 rounded block ${importResult.startsWith("Error") ? "bg-red-500/10 text-red-400" : "bg-green-500/10 text-green-400"}`}>
+              {importResult}
+            </span>
+          )}
         </div>
 
         {/* ClawHub */}
-        <div className="bg-bg-secondary border border-border-default rounded-xl p-5 space-y-3 opacity-60">
+        <div className="bg-bg-secondary border border-border-default rounded-xl p-5 space-y-3">
           <div className="flex items-center gap-2">
             <Globe size={16} className="text-purple-400" />
             <h3 className="text-sm font-semibold text-text-primary">ClawHub</h3>
-            <span className="text-[10px] px-1.5 py-0.5 bg-bg-tertiary text-text-muted rounded-md font-medium">Phase 3</span>
+            <span className="text-[10px] px-1.5 py-0.5 bg-purple-500/10 text-purple-400 rounded-md font-medium">Ready</span>
           </div>
           <p className="text-xs text-text-secondary">
             Publish to the public ClawHub marketplace for the community.
           </p>
           <button
-            disabled
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-bg-tertiary text-text-muted border border-border-default rounded-lg cursor-not-allowed"
+            onClick={onPublish}
+            className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors cursor-pointer"
           >
             <Globe size={12} />
             Publish to ClawHub

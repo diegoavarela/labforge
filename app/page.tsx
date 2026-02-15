@@ -7,12 +7,13 @@ import InventoryPanel from "@/components/layout/InventoryPanel";
 import LibraryPanel from "@/components/library/LibraryPanel";
 import CanvasRouter from "@/components/canvas/CanvasRouter";
 import ChatPanel from "@/components/layout/ChatPanel";
+import MarketplacePanel from "@/components/marketplace/MarketplacePanel";
 import { useSkillStore } from "@/stores/skill";
 import { useLibraryStore } from "@/stores/library";
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
-  const [leftTab, setLeftTab] = useState<"skills" | "library">("skills");
+  const [leftTab, setLeftTab] = useState<"skills" | "library" | "marketplace">("skills");
 
   useEffect(() => {
     setMounted(true);
@@ -100,6 +101,16 @@ export default function Home() {
                 >
                   Library
                 </button>
+                <button
+                  onClick={() => setLeftTab("marketplace")}
+                  className={`text-[11px] font-semibold tracking-wide uppercase py-2 border-b-2 transition-colors cursor-pointer ${
+                    leftTab === "marketplace"
+                      ? "text-text-primary border-purple-400"
+                      : "text-text-muted border-transparent hover:text-text-secondary"
+                  }`}
+                >
+                  Hub
+                </button>
               </div>
               <button
                 onClick={toggleInventory}
@@ -108,7 +119,9 @@ export default function Home() {
                 <PanelLeftClose size={14} />
               </button>
             </div>
-            {leftTab === "skills" ? <InventoryPanel /> : <LibraryPanel />}
+            {leftTab === "skills" && <InventoryPanel />}
+            {leftTab === "library" && <LibraryPanel />}
+            {leftTab === "marketplace" && <MarketplacePanel />}
           </div>
         ) : (
           <div className="w-10 shrink-0 border-r border-border-default flex flex-col items-center pt-2 bg-bg-secondary">
