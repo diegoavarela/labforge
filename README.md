@@ -1,43 +1,50 @@
-# LabForge
+# LabForge — Visual Skill IDE for OpenClaw
 
-Visual plugin builder for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Design commands, agents, skills, hooks, and MCP integrations through a node-based workflow editor — then export ready-to-use plugins.
+Create, edit, test, visualize, and publish skills for [OpenClaw](https://github.com/openclaw/openclaw) agents.
+
+> **Screenshots coming soon**
 
 ## Features
 
-- **Visual workflow editor** — Drag-and-drop node graph for building command flows (branching, loops, parallel execution, shell steps, prompts, and more)
-- **Agent designer** — Configure AI agents with custom models, tools, skills, and instructions
-- **Skill editor** — Write and organize reusable skills with a built-in Monaco code editor
-- **MCP integrations** — Browse, configure, and wire Model Context Protocol servers
-- **Hook system** — Define event-driven actions triggered by bash commands, MCP calls, or agents
-- **Plugin library** — Manage multiple plugins, track versions, import/export
-- **GitHub push** — Push plugins directly to GitHub repositories
-- **AI assistant** — Built-in chat panel powered by Claude for inline help
+- **Monaco editor** — Full-featured code editor for SKILL.md files and scripts
+- **Visual flow editor** — React Flow-based graph with bidirectional SKILL.md sync (edit the flow → updates the markdown, edit the markdown → updates the flow)
+- **Import skills** — From ZIP, TAR/TGZ archives, or local folders
+- **Export & distribute** — Save locally, share as ZIP with your team, or publish to [ClawHub](https://clawhub.com)
+- **Testing panel** — Agent View, Dry Run, Dependency Checker, and Diff View
+- **AI chat assistant** — Built-in Claude-powered assistant for skill creation and editing
+- **GitHub push** — Push skills directly to GitHub repositories
+- **Dark mode** — Full dark theme UI
 
-## Tech stack
+## Tech Stack
 
-Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 · React Flow · Monaco Editor · Zustand · Drizzle ORM · PostgreSQL (Neon)
+Next.js 14 · React 19 · TypeScript · Tailwind CSS · React Flow · Monaco Editor · Zustand · Drizzle ORM · PostgreSQL
 
-## Getting started
+## Getting Started
 
-### Prerequisites
+### Docker (recommended)
 
-- Node.js 20+
-- PostgreSQL (or a [Neon](https://neon.tech) database)
-- An [Anthropic API key](https://console.anthropic.com/)
+```bash
+git clone https://github.com/diegoavarela/labforge.git
+cd labforge
+cp .env.example .env.local
+# Edit .env.local with your Anthropic API key
+docker compose up
+```
 
-### Setup
+Open [http://localhost:3000](http://localhost:3000).
+
+### Local Development
+
+**Prerequisites:** Node.js 20+, PostgreSQL, [Anthropic API key](https://console.anthropic.com/)
 
 ```bash
 git clone https://github.com/diegoavarela/labforge.git
 cd labforge
 pnpm install
-```
-
-Copy the example env file and fill in your values:
-
-```bash
 cp .env.example .env.local
 ```
+
+Edit `.env.local`:
 
 | Variable | Required | Description |
 |---|---|---|
@@ -48,21 +55,14 @@ cp .env.example .env.local
 | `AUTH_SECRET` | For GitHub push | NextAuth secret (`openssl rand -base64 32`) |
 | `GITHUB_TOKEN` | No | Higher rate limits for the skills registry |
 
-Run the database migrations:
+Run migrations and start:
 
 ```bash
 pnpm drizzle-kit push
-```
-
-Start the dev server:
-
-```bash
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
-
-## Project structure
+## Project Structure
 
 ```
 app/            Next.js pages and API routes
@@ -73,6 +73,11 @@ types/          TypeScript type definitions
 drizzle/        Database migrations
 ```
 
+## Links
+
+- [OpenClaw](https://github.com/openclaw/openclaw) — The agent framework LabForge builds skills for
+- [ClawHub](https://clawhub.com) — Marketplace for sharing and discovering skills
+
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE) © Diego Varela

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { Github, LogOut, ChevronDown, Check, Lock, Plus, Loader2 } from "lucide-react";
-import { usePluginStore } from "@/stores/plugin";
+import { useSkillStore } from "@/stores/skill";
 
 interface GitHubRepo {
   full_name: string;
@@ -15,8 +15,8 @@ export default function LoginButton() {
   const { data: session, status } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const githubRepo = usePluginStore((s) => s.githubRepo);
-  const setGithubRepo = usePluginStore((s) => s.setGithubRepo);
+  const githubRepo = useSkillStore((s) => s.githubRepo);
+  const setGithubRepo = useSkillStore((s) => s.setGithubRepo);
 
   const [repos, setRepos] = useState<GitHubRepo[]>([]);
   const [loadingRepos, setLoadingRepos] = useState(false);

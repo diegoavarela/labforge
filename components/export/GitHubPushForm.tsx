@@ -4,10 +4,10 @@ import { useState, useCallback } from "react";
 import { Github, ExternalLink, AlertCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import type { PluginFile } from "@/lib/generator/plugin";
+import type { SkillFile } from "@/lib/generator/skill";
 
 interface GitHubPushFormProps {
-  files: PluginFile[];
+  files: SkillFile[];
   defaultName: string;
 }
 
@@ -109,7 +109,7 @@ export default function GitHubPushForm({
         <Input
           value={repoName}
           onChange={(value) => setRepoName(value)}
-          placeholder={mode === "new" ? "my-plugin" : "username/my-plugin"}
+          placeholder={mode === "new" ? "my-skills" : "username/my-skills"}
         />
       </div>
 

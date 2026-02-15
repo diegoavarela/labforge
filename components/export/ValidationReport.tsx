@@ -11,7 +11,7 @@ import { useState } from "react";
 import type {
   ValidationReport as Report,
   ValidationIssue,
-} from "@/lib/validator/plugin";
+} from "@/lib/validator/skill";
 
 interface Props {
   report: Report;

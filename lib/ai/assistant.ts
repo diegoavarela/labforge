@@ -7,12 +7,12 @@ export interface StreamEvent {
 
 export async function* sendChatMessage(
   messages: { role: string; content: string }[],
-  pluginContext: string
+  systemPrompt: string
 ): AsyncGenerator<StreamEvent> {
   const response = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, pluginContext }),
+    body: JSON.stringify({ messages, systemPrompt }),
   });
 
   if (!response.ok) {

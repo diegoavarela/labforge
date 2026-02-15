@@ -3,9 +3,9 @@
 import { useState, useMemo } from "react";
 import Modal from "@/components/ui/Modal";
 import FileTreePreview from "./FileTreePreview";
-import { usePluginStore } from "@/stores/plugin";
-import { generatePluginStructure } from "@/lib/generator/plugin";
-import type { PluginFile } from "@/lib/generator/plugin";
+import { useSkillStore } from "@/stores/skill";
+import { generateSkillStructure } from "@/lib/generator/skill";
+import type { SkillFile } from "@/lib/generator/skill";
 
 interface PreviewModalProps {
   isOpen: boolean;
@@ -13,19 +13,15 @@ interface PreviewModalProps {
 }
 
 export default function PreviewModal({ isOpen, onClose }: PreviewModalProps) {
-  const store = usePluginStore();
-  const [selectedFile, setSelectedFile] = useState<PluginFile | null>(null);
+  const store = useSkillStore();
+  const [selectedFile, setSelectedFile] = useState<SkillFile | null>(null);
 
   const files = useMemo(() => {
     if (!isOpen) return [];
-    return generatePluginStructure({
-      pluginName: store.pluginName || "my-plugin",
+    return generateSkillStructure({
+      skillName: store.skillName || "my-skills",
       version: store.version,
       skills: store.skills,
-      agents: store.agents,
-      commands: store.commands,
-      hooks: store.hooks,
-      mcps: store.mcps,
       selectedItemId: store.selectedItemId,
       selectedItemType: store.selectedItemType,
       theme: store.theme,
@@ -33,12 +29,11 @@ export default function PreviewModal({ isOpen, onClose }: PreviewModalProps) {
       rightPanelCollapsed: store.rightPanelCollapsed,
       chatMessages: store.chatMessages,
       changelog: store.changelog,
-      dependencies: store.dependencies,
     });
-  }, [isOpen, store.pluginName, store.version, store.skills, store.agents, store.commands, store.hooks, store.mcps, store.selectedItemId, store.selectedItemType, store.theme, store.inventoryCollapsed, store.rightPanelCollapsed, store.chatMessages, store.changelog, store.dependencies]);
+  }, [isOpen, store.skillName, store.version, store.skills, store.selectedItemId, store.selectedItemType, store.theme, store.inventoryCollapsed, store.rightPanelCollapsed, store.chatMessages, store.changelog]);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Plugin Files" size="3xl">
+    <Modal isOpen={isOpen} onClose={onClose} title="Skill Files" size="3xl">
       <div className="grid grid-cols-2 gap-4" style={{ height: "60vh" }}>
         <div className="flex flex-col min-h-0">
           <label className="block text-xs font-medium text-text-muted mb-1 shrink-0">

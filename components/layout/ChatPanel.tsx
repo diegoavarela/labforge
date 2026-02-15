@@ -5,23 +5,20 @@ import { generateId } from "@/lib/utils/id";
 import { Send, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { usePluginStore } from "@/stores/plugin";
+import { useSkillStore } from "@/stores/skill";
 import { sendChatMessage } from "@/lib/ai/assistant";
 import type { StreamEvent } from "@/lib/ai/assistant";
 import { buildSystemPrompt } from "@/lib/ai/prompts";
 import ChatMessage from "@/components/chat/ChatMessage";
-import type { AssistantAction, Skill, Agent, MCP, Command, Hook } from "@/types";
+import type { AssistantAction, Skill, ScriptFile } from "@/types";
 
 export default function ChatPanel() {
-  const chatMessages = usePluginStore((s) => s.chatMessages);
-  const addChatMessage = usePluginStore((s) => s.addChatMessage);
-
-  const addSkill = usePluginStore((s) => s.addSkill);
-  const addAgent = usePluginStore((s) => s.addAgent);
-  const addMCP = usePluginStore((s) => s.addMCP);
-  const addCommand = usePluginStore((s) => s.addCommand);
-  const addHook = usePluginStore((s) => s.addHook);
-  const selectItem = usePluginStore((s) => s.selectItem);
+  const chatMessages = useSkillStore((s) => s.chatMessages);
+  const addChatMessage = useSkillStore((s) => s.addChatMessage);
+  const addSkill = useSkillStore((s) => s.addSkill);
+  const updateSkill = useSkillStore((s) => s.updateSkill);
+  const selectItem = useSkillStore((s) => s.selectItem);
+  const skills = useSkillStore((s) => s.skills);
 
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -43,85 +40,48 @@ export default function ChatPanel() {
   const handleApplyAction = useCallback(
     (action: AssistantAction) => {
       const data = action.data as Record<string, unknown>;
-      // Use AI-provided ID if present (for cross-references), otherwise generate
       const id = (data.id as string) || generateId();
 
       switch (action.type) {
-        case "create_skill":
+        case "create_skill": {
+          const scripts = Array.isArray(data.scripts)
+            ? (data.scripts as ScriptFile[])
+            : [];
           addSkill({
             id,
             name: (data.name as string) || "Untitled Skill",
             description: (data.description as string) || "",
-            content: (data.content as string) || "",
-            files: [],
+            skillMd: (data.skillMd as string) || "",
+            scripts,
+            metadata: {},
             source: "local",
-            categories: [],
-            tags: [],
-          } satisfies Skill);
-          break;
-
-        case "create_agent":
-          addAgent({
-            id,
-            name: (data.name as string) || "Untitled Agent",
-            description: (data.description as string) || "",
-            model: (data.model as string) || "claude-sonnet-4-20250514",
-            context: "fork",
-            allowedTools: (data.allowedTools as string[]) || [],
-            mcpIds: (data.mcpIds as string[]) || [],
-            skillIds: (data.skillIds as string[]) || [],
-            instructions: (data.instructions as string) || "",
-          } satisfies Agent);
-          break;
-
-        case "add_mcp":
-          addMCP({
-            id,
-            name: (data.name as string) || "Untitled MCP",
-            description: (data.description as string) || "",
-            source: (data.source as string) || "",
-            transport: (data.transport as string[]) || ["stdio"],
-            installCommand: (data.installCommand as string) || "",
-            authType: null,
-            tools: [],
-            configuredEnvVars: {},
-            isConfigured: false,
-            categories: [],
-            isOfficial: false,
-          } satisfies MCP);
-          break;
-
-        case "create_command": {
-          const nodes = (data.nodes as Command["nodes"]) || [];
-          const edges = (data.edges as Command["edges"]) || [];
-          addCommand({
-            id,
-            name: (data.name as string) || "Untitled Command",
-            description: (data.description as string) || "",
-            nodes,
-            edges,
-          } satisfies Command);
-          // Select the command to show the flow
-          selectItem(id, "command");
+          });
+          selectItem(id, "skill");
           break;
         }
-
-        case "create_hook":
-          addHook({
-            id,
-            name: (data.name as string) || "Untitled Hook",
-            enabled: true,
-            event: (data.event as string) || "",
-            matcher: (data.matcher as string) || "",
-            action: (data.action as Hook["action"]) || {
-              type: "bash",
-              config: {},
-            },
-          } satisfies Hook);
+        case "edit_skill_md": {
+          const skillId = data.skillId as string;
+          if (skillId) {
+            updateSkill(skillId, { skillMd: data.skillMd as string });
+          }
           break;
+        }
+        case "add_script": {
+          const skillId = data.skillId as string;
+          const skill = skills.find((s) => s.id === skillId);
+          if (skill) {
+            const newScript: ScriptFile = {
+              filename: (data.filename as string) || "scripts/script.sh",
+              content: (data.content as string) || "",
+              language: (data.language as string) || "bash",
+            };
+            updateSkill(skillId, { scripts: [...skill.scripts, newScript] });
+          }
+          break;
+        }
       }
     },
-    [addSkill, addAgent, addMCP, addCommand, addHook, selectItem]
+    [addSkill, updateSkill, selectItem, skills]
   );
 
   const handleSend = useCallback(async () => {
@@ -143,7 +103,7 @@ export default function ChatPanel() {
     setStreamingContent("");
 
     try {
-      const state = usePluginStore.getState();
+      const state = useSkillStore.getState();
       const systemPrompt = buildSystemPrompt(state);
 
       const allMessages = [...chatMessages, userMessage].map((m) => ({
@@ -194,19 +154,17 @@ export default function ChatPanel() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      {/* AI working indicator */}
       {isLoading && (
         <div className="h-0.5 w-full bg-bg-tertiary overflow-hidden shrink-0">
           <div className="h-full w-1/3 bg-accent-orange rounded-full animate-[shimmer_1.2s_ease-in-out_infinite]" />
         </div>
       )}
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 text-xs">
         {chatMessages.length === 0 && !isLoading && (
           <div className="flex flex-col items-center justify-center h-full text-text-muted text-center gap-2 py-12">
-            <p className="text-xs">Describe what you want to build.</p>
+            <p className="text-xs">Describe the skill you want to create.</p>
             <p className="text-[10px] text-text-muted/60">
-              e.g. &quot;Create a code review agent with GitHub MCP&quot;
+              e.g. &quot;Create a deployment skill with a bash script&quot;
             </p>
           </div>
         )}
@@ -220,7 +178,6 @@ export default function ChatPanel() {
           />
         ))}
 
-        {/* Streaming message */}
         {isLoading && streamingContent && (
           <div className="mr-auto bg-bg-tertiary text-text-secondary px-3 py-2 rounded-lg text-xs max-w-[85%]">
             <div className="prose prose-sm max-w-none break-words [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0 [&_h1]:text-sm [&_h2]:text-xs [&_h3]:text-xs [&_pre]:text-[11px] [&_pre]:my-1">
@@ -229,7 +186,6 @@ export default function ChatPanel() {
           </div>
         )}
 
-        {/* Thinking indicator */}
         {isLoading && !streamingContent && (
           <div className="flex items-center gap-2 text-text-muted text-xs px-3 py-2">
             <Loader2 size={12} className="animate-spin" />
@@ -237,7 +193,6 @@ export default function ChatPanel() {
           </div>
         )}
 
-        {/* Error */}
         {error && (
           <div className="bg-red-500/10 text-red-400 border border-red-500/20 px-3 py-2 rounded-lg text-xs">
             {error}
@@ -247,7 +202,6 @@ export default function ChatPanel() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
       <div className="px-3 py-3 border-t border-border-default flex gap-2 shrink-0">
         <textarea
           value={input}
