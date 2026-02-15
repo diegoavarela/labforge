@@ -2,17 +2,17 @@
 
 import { useState, useMemo } from "react";
 import { ChevronRight, ChevronDown, File, Folder } from "lucide-react";
-import type { PluginFile } from "@/lib/generator/plugin";
+import type { SkillFile } from "@/lib/generator/skill";
 
 interface TreeNode {
   name: string;
   path: string;
   isDir: boolean;
   children: TreeNode[];
-  file?: PluginFile;
+  file?: SkillFile;
 }
 
-function buildTree(files: PluginFile[]): TreeNode[] {
+function buildTree(files: SkillFile[]): TreeNode[] {
   const root: TreeNode = { name: "", path: "", isDir: true, children: [] };
 
   for (const file of files) {
@@ -58,7 +58,7 @@ interface TreeItemProps {
   node: TreeNode;
   depth: number;
   selectedPath: string | null;
-  onSelect: (file: PluginFile) => void;
+  onSelect: (file: SkillFile) => void;
   expandedDirs: Set<string>;
   toggleDir: (path: string) => void;
 }
@@ -111,9 +111,9 @@ function TreeItem({ node, depth, selectedPath, onSelect, expandedDirs, toggleDir
 }
 
 interface FileTreePreviewProps {
-  files: PluginFile[];
-  selectedFile: PluginFile | null;
-  onSelectFile: (file: PluginFile) => void;
+  files: SkillFile[];
+  selectedFile: SkillFile | null;
+  onSelectFile: (file: SkillFile) => void;
 }
 
 export default function FileTreePreview({ files, selectedFile, onSelectFile }: FileTreePreviewProps) {
@@ -158,7 +158,7 @@ export default function FileTreePreview({ files, selectedFile, onSelectFile }: F
       ))}
       {files.length === 0 && (
         <p className="text-text-muted text-sm p-4 text-center">
-          No files to preview. Add skills, agents, or MCPs first.
+          No files to preview. Add skills first.
         </p>
       )}
     </div>

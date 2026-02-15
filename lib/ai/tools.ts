@@ -1,80 +1,55 @@
-export const pluginTools = [
+export const skillTools = [
   {
     name: "create_skill",
-    description: "Create a new skill in the plugin. Skills are markdown instruction files.",
+    description: "Create a new skill with SKILL.md content and optional script files.",
     input_schema: {
       type: "object" as const,
       properties: {
         id: { type: "string", description: "UUID for the skill (format: 8-4-4-4-12 hex)" },
         name: { type: "string", description: "Skill name" },
         description: { type: "string", description: "Brief description" },
-        content: { type: "string", description: "Markdown content" },
+        skillMd: { type: "string", description: "SKILL.md markdown content" },
+        scripts: {
+          type: "array",
+          description: "Script files for this skill",
+          items: {
+            type: "object",
+            properties: {
+              filename: { type: "string", description: "e.g. scripts/deploy.sh" },
+              content: { type: "string", description: "Script file content" },
+              language: { type: "string", description: "bash, python, etc." },
+            },
+            required: ["filename", "content", "language"],
+          },
+        },
       },
-      required: ["id", "name", "description", "content"],
+      required: ["id", "name", "description", "skillMd"],
     },
   },
   {
-    name: "create_agent",
-    description: "Create a new agent. Agents are AI workers that execute tasks.",
+    name: "edit_skill_md",
+    description: "Edit the SKILL.md content of the currently selected skill.",
     input_schema: {
       type: "object" as const,
       properties: {
-        id: { type: "string", description: "UUID" },
-        name: { type: "string" },
-        description: { type: "string" },
-        model: { type: "string" },
-        instructions: { type: "string" },
-        allowedTools: { type: "array", items: { type: "string" } },
-        skillIds: { type: "array", items: { type: "string" }, description: "IDs of skills to attach" },
-        mcpIds: { type: "array", items: { type: "string" }, description: "IDs of MCPs to attach" },
+        skillId: { type: "string", description: "ID of the skill to edit" },
+        skillMd: { type: "string", description: "New SKILL.md content" },
       },
-      required: ["id", "name", "description", "instructions"],
+      required: ["skillId", "skillMd"],
     },
   },
   {
-    name: "add_mcp",
-    description: "Add an MCP server integration to the plugin.",
+    name: "add_script",
+    description: "Add a new script file to an existing skill.",
     input_schema: {
       type: "object" as const,
       properties: {
-        id: { type: "string" },
-        name: { type: "string" },
-        description: { type: "string" },
-        source: { type: "string" },
-        transport: { type: "array", items: { type: "string" } },
-        installCommand: { type: "string" },
+        skillId: { type: "string", description: "ID of the skill" },
+        filename: { type: "string", description: "Script filename (e.g. scripts/build.sh)" },
+        content: { type: "string", description: "Script file content" },
+        language: { type: "string", description: "bash, python, etc." },
       },
-      required: ["id", "name", "description", "source", "installCommand"],
-    },
-  },
-  {
-    name: "create_command",
-    description: "Create a new command (visual flow/pipeline) in the plugin.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        id: { type: "string" },
-        name: { type: "string" },
-        description: { type: "string" },
-        nodes: { type: "array", description: "Flow nodes array" },
-        edges: { type: "array", description: "Flow edges array" },
-      },
-      required: ["id", "name", "description", "nodes", "edges"],
-    },
-  },
-  {
-    name: "create_hook",
-    description: "Create a new event-driven hook.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        id: { type: "string" },
-        name: { type: "string" },
-        event: { type: "string" },
-        matcher: { type: "string" },
-        action: { type: "object" },
-      },
-      required: ["id", "name", "event", "action"],
+      required: ["skillId", "filename", "content", "language"],
     },
   },
 ];

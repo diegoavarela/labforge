@@ -1,74 +1,44 @@
 "use client";
 
-import { useRef } from "react";
-import { Trash2, Plus, Upload } from "lucide-react";
+import { Trash2, Plus } from "lucide-react";
 import { useLibraryStore } from "@/stores/library";
-import { usePluginStore } from "@/stores/plugin";
-import { parsePluginArchive } from "@/lib/importer/plugin";
+import { useSkillStore } from "@/stores/skill";
 
 export default function LibraryPanel() {
-  const plugins = useLibraryStore((s) => s.plugins);
-  const activePluginId = useLibraryStore((s) => s.activePluginId);
-  const saveCurrentPlugin = useLibraryStore((s) => s.saveCurrentPlugin);
-  const loadPlugin = useLibraryStore((s) => s.loadPlugin);
-  const deletePlugin = useLibraryStore((s) => s.deletePlugin);
-  const createNewPlugin = useLibraryStore((s) => s.createNewPlugin);
-  const setActivePluginId = useLibraryStore((s) => s.setActivePluginId);
-  const importAsNewPlugin = useLibraryStore((s) => s.importAsNewPlugin);
+  const projects = useLibraryStore((s) => s.projects);
+  const activeProjectId = useLibraryStore((s) => s.activeProjectId);
+  const saveCurrentProject = useLibraryStore((s) => s.saveCurrentProject);
+  const loadProject = useLibraryStore((s) => s.loadProject);
+  const deleteProject = useLibraryStore((s) => s.deleteProject);
+  const createNewProject = useLibraryStore((s) => s.createNewProject);
+  const setActiveProjectId = useLibraryStore((s) => s.setActiveProjectId);
 
-  const getPluginData = usePluginStore((s) => s.getPluginData);
-  const importPlugin = usePluginStore((s) => s.importPlugin);
-  const resetPlugin = usePluginStore((s) => s.resetPlugin);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const getSkillProjectData = useSkillStore((s) => s.getSkillProjectData);
+  const hydrate = useSkillStore((s) => s.hydrate);
+  const resetProject = useSkillStore((s) => s.resetProject);
 
   const handleSwitch = (id: string) => {
-    if (id === activePluginId) return;
-    saveCurrentPlugin(getPluginData());
-    const saved = loadPlugin(id);
+    if (id === activeProjectId) return;
+    saveCurrentProject(getSkillProjectData());
+    const saved = loadProject(id);
     if (saved) {
-      importPlugin({ ...saved.data, pluginName: saved.data.pluginName });
-      setActivePluginId(id);
+      hydrate(saved.data);
+      setActiveProjectId(id);
     }
   };
 
-  const handleNewPlugin = () => {
-    saveCurrentPlugin(getPluginData());
-    resetPlugin();
-    createNewPlugin();
-  };
-
-  const handleImportZip = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      saveCurrentPlugin(getPluginData());
-      const parsed = await parsePluginArchive(file);
-      const pluginData: import("@/types").PluginData = {
-        pluginName: parsed.pluginName,
-        version: parsed.version || "0.1.0",
-        skills: parsed.skills,
-        agents: parsed.agents,
-        commands: parsed.commands,
-        hooks: parsed.hooks,
-        mcps: parsed.mcps,
-        changelog: parsed.changelog || [],
-        dependencies: parsed.dependencies || [],
-      };
-      importAsNewPlugin(pluginData);
-      importPlugin(parsed);
-    } catch (err) {
-      console.error("Failed to import plugin:", err);
-    }
-    e.target.value = "";
+  const handleNewProject = () => {
+    saveCurrentProject(getSkillProjectData());
+    resetProject();
+    createNewProject();
   };
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    const wasActive = id === activePluginId;
-    deletePlugin(id);
+    const wasActive = id === activeProjectId;
+    deleteProject(id);
     if (wasActive) {
-      resetPlugin();
+      resetProject();
     }
   };
 
@@ -77,48 +47,27 @@ export default function LibraryPanel() {
     return d.toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
   };
 
-  const sorted = [...plugins].sort((a, b) => b.updatedAt - a.updatedAt);
+  const sorted = [...projects].sort((a, b) => b.updatedAt - a.updatedAt);
 
   return (
     <div className="flex-1 overflow-y-auto p-2 space-y-2">
-      <div className="flex gap-1.5">
-        <button
-          onClick={handleNewPlugin}
-          className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] text-text-secondary border border-dashed border-border-default rounded-lg hover:bg-bg-hover hover:text-text-primary transition-colors cursor-pointer"
-        >
-          <Plus size={12} />
-          New
-        </button>
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] text-text-secondary border border-dashed border-border-default rounded-lg hover:bg-bg-hover hover:text-text-primary transition-colors cursor-pointer"
-        >
-          <Upload size={12} />
-          Import
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".zip,.tgz,application/gzip,application/x-gzip,application/x-tar"
-          onChange={handleImportZip}
-          className="hidden"
-        />
-      </div>
+      <button
+        onClick={handleNewProject}
+        className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] text-text-secondary border border-dashed border-border-default rounded-lg hover:bg-bg-hover hover:text-text-primary transition-colors cursor-pointer"
+      >
+        <Plus size={12} />
+        New Project
+      </button>
 
       {sorted.length === 0 && (
         <p className="text-[11px] text-text-muted text-center py-4">
-          No saved plugins yet.
+          No saved projects yet.
         </p>
       )}
 
       {sorted.map((p) => {
-        const isActive = p.id === activePluginId;
-        const total =
-          p.data.skills.length +
-          p.data.agents.length +
-          p.data.commands.length +
-          p.data.hooks.length +
-          p.data.mcps.length;
+        const isActive = p.id === activeProjectId;
+        const skillCount = p.data.skills?.length || 0;
 
         return (
           <div
@@ -133,7 +82,7 @@ export default function LibraryPanel() {
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="text-[12px] font-medium text-text-primary truncate">
-                  {p.pluginName || "Untitled"}
+                  {p.skillName || "Untitled"}
                 </span>
                 {isActive && (
                   <span className="text-[9px] px-1 py-0.5 bg-accent-orange/20 text-accent-orange rounded font-medium">
@@ -143,7 +92,7 @@ export default function LibraryPanel() {
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[10px] text-text-muted">
-                  {total} component{total !== 1 ? "s" : ""}
+                  {skillCount} skill{skillCount !== 1 ? "s" : ""}
                 </span>
                 <span className="text-[10px] text-text-muted">
                   {formatDate(p.updatedAt)}
@@ -154,7 +103,7 @@ export default function LibraryPanel() {
             <button
               onClick={(e) => handleDelete(e, p.id)}
               className="p-1 text-text-muted hover:text-red-400 hover:bg-red-400/10 rounded transition-colors cursor-pointer"
-              title="Delete plugin"
+              title="Delete project"
             >
               <Trash2 size={12} />
             </button>

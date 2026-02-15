@@ -1,170 +1,403 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Sparkles, ArrowRight, Wand2, Loader2, Maximize2, Minimize2 } from "lucide-react";
-import CopyMarkdown from "@/components/ui/CopyMarkdown";
-import { usePluginStore } from "@/stores/plugin";
-import { useShallow } from "zustand/react/shallow";
-import { sendChatMessage } from "@/lib/ai/assistant";
+import { Sparkles, Plus, X, FileText, Code, Eye, FolderDown, Check, Loader2, Share2, Globe, Users, HardDrive } from "lucide-react";
+import dynamic from "next/dynamic";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { useSkillStore } from "@/stores/skill";
+import { generateId } from "@/lib/utils/id";
+import type { ScriptFile } from "@/types";
+
+const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
+
+function getMonacoLanguage(filename: string): string {
+  const ext = filename.split(".").pop()?.toLowerCase() || "";
+  const map: Record<string, string> = {
+    sh: "shell",
+    bash: "shell",
+    py: "python",
+    js: "javascript",
+    ts: "typescript",
+    json: "json",
+    yaml: "yaml",
+    yml: "yaml",
+    md: "markdown",
+    toml: "ini",
+  };
+  return map[ext] || "plaintext";
+}
+
+type Tab = "skillmd" | "preview" | "distribute" | string;
 
 export default function SkillCanvas({ skillId }: { skillId: string }) {
-  const skill = usePluginStore((s) => s.skills.find((sk) => sk.id === skillId));
-  const updateSkill = usePluginStore((s) => s.updateSkill);
-  const selectItem = usePluginStore((s) => s.selectItem);
+  const skill = useSkillStore((s) => s.skills.find((sk) => sk.id === skillId));
+  const updateSkill = useSkillStore((s) => s.updateSkill);
 
-  const usedByAgents = usePluginStore(
-    useShallow((s) => s.agents.filter((a) => a.skillIds.includes(skillId)))
-  );
+  const [activeTab, setActiveTab] = useState<Tab>("skillmd");
+  const [saving, setSaving] = useState(false);
+  const [saveResult, setSaveResult] = useState<string | null>(null);
 
-  const [prompt, setPrompt] = useState("");
-  const [generating, setGenerating] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const handleUpdateSkillMd = useCallback((value: string | undefined) => {
+    if (value !== undefined) updateSkill(skillId, { skillMd: value });
+  }, [skillId, updateSkill]);
 
-  const handleGenerate = useCallback(async () => {
-    const text = prompt.trim();
-    if (!text || generating || !skill) return;
+  const handleUpdateScript = useCallback((filename: string, content: string | undefined) => {
+    if (!skill || content === undefined) return;
+    updateSkill(skillId, {
+      scripts: skill.scripts.map((s) =>
+        s.filename === filename ? { ...s, content } : s
+      ),
+    });
+  }, [skill, skillId, updateSkill]);
 
-    setGenerating(true);
+  const handleAddScript = useCallback(() => {
+    if (!skill) return;
+    const name = `scripts/new-script-${skill.scripts.length + 1}.sh`;
+    const newScript: ScriptFile = {
+      filename: name,
+      content: "#!/bin/bash\nset -euo pipefail\n\n# Your script here\n",
+      language: "bash",
+    };
+    updateSkill(skillId, { scripts: [...skill.scripts, newScript] });
+    setActiveTab(name);
+  }, [skill, skillId, updateSkill]);
+
+  const handleRemoveScript = useCallback((filename: string) => {
+    if (!skill) return;
+    updateSkill(skillId, {
+      scripts: skill.scripts.filter((s) => s.filename !== filename),
+    });
+    if (activeTab === filename) setActiveTab("skillmd");
+  }, [skill, skillId, updateSkill, activeTab]);
+
+  const handleSaveLocal = useCallback(async () => {
+    if (!skill) return;
+    setSaving(true);
+    setSaveResult(null);
+
+    const frontmatter = `---\nname: ${skill.name}\ndescription: ${skill.description}\n---\n\n`;
+    const fullSkillMd = frontmatter + skill.skillMd;
+
     try {
-      const messages = [
-        {
-          role: "user",
-          content: text,
-        },
-      ];
-
-      const systemPrompt = `You are a skill content generator for Claude Code plugins. Generate ONLY the markdown content for a skill.md file — no explanations, no wrapping, no code fences. The user will describe what the skill should do.
-
-Current skill name: "${skill.name}"
-Current skill description: "${skill.description}"
-
-Output format: raw markdown content for the skill file. Start with a heading.`;
-
-      let fullContent = "";
-      for await (const chunk of sendChatMessage(messages, systemPrompt)) {
-        fullContent += chunk;
-        updateSkill(skillId, { content: fullContent });
+      const res = await fetch("/api/skills/save-local", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: skill.name,
+          skillMd: fullSkillMd,
+          scripts: skill.scripts,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSaveResult(`Saved to ${data.path}`);
+      } else {
+        setSaveResult(`Error: ${data.error}`);
       }
+    } catch (err) {
+      setSaveResult(`Error: ${err instanceof Error ? err.message : "Unknown"}`);
     } finally {
-      setGenerating(false);
-      setPrompt("");
+      setSaving(false);
+      setTimeout(() => setSaveResult(null), 4000);
     }
-  }, [prompt, generating, skill, skillId, updateSkill]);
+  }, [skill]);
 
   if (!skill) return null;
 
+  const fileTree = [
+    { name: "SKILL.md", type: "file" as const },
+    ...skill.scripts.map((s) => ({ name: s.filename, type: "file" as const })),
+  ];
+
   return (
-    <div className="h-full overflow-y-auto p-8">
-      <div className="max-w-2xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-skill">
-            <Sparkles size={18} />
-            <input
-              value={skill.name}
-              onChange={(e) => updateSkill(skillId, { name: e.target.value })}
-              className="text-xl font-semibold bg-transparent text-text-primary focus:outline-none border-b border-transparent focus:border-skill w-full"
-            />
-          </div>
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Top bar */}
+      <div className="shrink-0 border-b border-border-default px-4 py-3 space-y-2">
+        <div className="flex items-center gap-3">
+          <Sparkles size={16} className="text-skill shrink-0" />
           <input
-            value={skill.description}
-            onChange={(e) => updateSkill(skillId, { description: e.target.value })}
-            placeholder="Skill description..."
-            className="text-sm bg-transparent text-text-secondary placeholder:text-text-muted focus:outline-none w-full"
+            value={skill.name}
+            onChange={(e) => updateSkill(skillId, { name: e.target.value })}
+            className="text-lg font-semibold bg-transparent text-text-primary focus:outline-none border-b border-transparent focus:border-skill flex-1"
+            placeholder="Skill name"
           />
+          <button
+            onClick={handleSaveLocal}
+            disabled={saving}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-text-secondary border border-border-default rounded-lg hover:bg-bg-hover hover:text-text-primary transition-colors cursor-pointer disabled:opacity-50"
+          >
+            {saving ? <Loader2 size={12} className="animate-spin" /> : <FolderDown size={12} />}
+            Save to Local
+          </button>
+          {saveResult && (
+            <span className={`text-[10px] px-2 py-1 rounded ${saveResult.startsWith("Error") ? "bg-red-500/10 text-red-400" : "bg-green-500/10 text-green-400"}`}>
+              {saveResult}
+            </span>
+          )}
         </div>
+        <input
+          value={skill.description}
+          onChange={(e) => updateSkill(skillId, { description: e.target.value })}
+          placeholder="Skill description..."
+          className="text-sm bg-transparent text-text-secondary placeholder:text-text-muted focus:outline-none w-full"
+        />
+      </div>
 
-        {/* Metadata */}
-        <div className="bg-bg-secondary border border-border-default rounded-xl p-4 space-y-3">
-          <h3 className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Metadata</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-[11px] text-text-muted block mb-1">Source</label>
-              <span className="text-xs text-text-primary capitalize">{skill.source}</span>
-            </div>
-            {skill.sourceUrl && (
-              <div>
-                <label className="text-[11px] text-text-muted block mb-1">URL</label>
-                <span className="text-xs text-text-primary font-mono truncate block">{skill.sourceUrl}</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Content editor with AI prompt */}
-        <div className="bg-bg-secondary border border-border-default rounded-xl p-4 space-y-3">
-          <h3 className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Skill.md Content</h3>
-
-          {/* AI Prompt bar */}
-          <div className="flex gap-2">
-            <input
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleGenerate();
-                }
-              }}
-              placeholder="Describe what this skill should do..."
-              disabled={generating}
-              className="flex-1 bg-bg-tertiary border border-border-default rounded-lg px-3 py-2 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-skill transition-colors disabled:opacity-50"
-            />
-            <button
-              onClick={handleGenerate}
-              disabled={generating || !prompt.trim()}
-              className="flex items-center gap-1.5 px-3 py-2 bg-skill/10 text-skill border border-skill/20 rounded-lg text-xs font-medium hover:bg-skill/20 transition-colors disabled:opacity-50 cursor-pointer"
-            >
-              {generating ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
-              {generating ? "Generating..." : "Generate"}
-            </button>
-          </div>
-
-          <div>
-            <textarea
-              value={skill.content}
-              onChange={(e) => updateSkill(skillId, { content: e.target.value })}
-              placeholder="# Skill Name&#10;&#10;Describe the skill instructions here..."
-              rows={expanded ? 40 : 16}
-              className={`w-full bg-bg-tertiary border border-border-default rounded-lg px-4 py-3 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-focus resize-none font-mono leading-relaxed transition-all ${expanded ? "min-h-[600px]" : "min-h-[200px]"}`}
-            />
-            <div className="flex justify-end gap-1 mt-1">
-              <CopyMarkdown
-                label=""
-                getContent={() => {
-                  const fm = `---\nname: ${skill.name}\ndescription: ${skill.description}\n---`;
-                  return `${fm}\n\n${skill.content}`;
-                }}
-              />
+      <div className="flex flex-1 min-h-0">
+        {/* File explorer sidebar */}
+        <div className="w-48 shrink-0 border-r border-border-default bg-bg-secondary overflow-y-auto">
+          <div className="px-2 py-2">
+            <div className="text-[10px] font-semibold text-text-muted uppercase tracking-wider px-2 mb-1">Files</div>
+            {fileTree.map((f) => (
               <button
-                onClick={() => setExpanded(!expanded)}
-                className="p-1 rounded text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors cursor-pointer"
-                title={expanded ? "Collapse" : "Expand"}
+                key={f.name}
+                onClick={() => setActiveTab(f.name === "SKILL.md" ? "skillmd" : f.name)}
+                className={`w-full flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors cursor-pointer ${
+                  (f.name === "SKILL.md" && activeTab === "skillmd") || activeTab === f.name
+                    ? "bg-bg-hover text-text-primary"
+                    : "text-text-secondary hover:bg-bg-hover hover:text-text-primary"
+                }`}
               >
-                {expanded ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+                {f.name === "SKILL.md" ? <FileText size={11} /> : <Code size={11} />}
+                <span className="truncate">{f.name}</span>
+              </button>
+            ))}
+            <button
+              onClick={() => setActiveTab("preview")}
+              className={`w-full flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors cursor-pointer mt-1 ${
+                activeTab === "preview"
+                  ? "bg-bg-hover text-text-primary"
+                  : "text-text-secondary hover:bg-bg-hover hover:text-text-primary"
+              }`}
+            >
+              <Eye size={11} />
+              <span>Preview</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("distribute")}
+              className={`w-full flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors cursor-pointer ${
+                activeTab === "distribute"
+                  ? "bg-bg-hover text-text-primary"
+                  : "text-text-secondary hover:bg-bg-hover hover:text-text-primary"
+              }`}
+            >
+              <Share2 size={11} />
+              <span>Distribute</span>
+            </button>
+            <div className="border-t border-border-default mt-2 pt-2">
+              <button
+                onClick={handleAddScript}
+                className="w-full flex items-center gap-1.5 px-2 py-1 rounded text-xs text-text-muted hover:bg-bg-hover hover:text-text-primary transition-colors cursor-pointer"
+              >
+                <Plus size={11} />
+                New Script
               </button>
             </div>
           </div>
         </div>
 
-        {/* Used by */}
-        {usedByAgents.length > 0 && (
-          <div className="bg-bg-secondary border border-border-default rounded-xl p-4 space-y-3">
-            <h3 className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Used by</h3>
-            <div className="space-y-1.5">
-              {usedByAgents.map((agent) => (
+        {/* Editor area */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Tabs */}
+          <div className="shrink-0 flex items-center gap-0 border-b border-border-default bg-bg-secondary overflow-x-auto">
+            <button
+              onClick={() => setActiveTab("skillmd")}
+              className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors cursor-pointer shrink-0 ${
+                activeTab === "skillmd"
+                  ? "text-text-primary border-skill"
+                  : "text-text-muted border-transparent hover:text-text-secondary"
+              }`}
+            >
+              SKILL.md
+            </button>
+            {skill.scripts.map((s) => (
+              <div key={s.filename} className="flex items-center shrink-0">
                 <button
-                  key={agent.id}
-                  onClick={() => selectItem(agent.id, "agent")}
-                  className="flex items-center gap-2 text-xs text-text-secondary hover:text-agent transition-colors cursor-pointer"
+                  onClick={() => setActiveTab(s.filename)}
+                  className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors cursor-pointer ${
+                    activeTab === s.filename
+                      ? "text-text-primary border-accent-orange"
+                      : "text-text-muted border-transparent hover:text-text-secondary"
+                  }`}
                 >
-                  <ArrowRight size={11} />
-                  <span className="text-agent">{agent.name}</span>
+                  {s.filename.split("/").pop()}
                 </button>
-              ))}
-            </div>
+                <button
+                  onClick={() => handleRemoveScript(s.filename)}
+                  className="p-0.5 text-text-muted hover:text-red-400 transition-colors cursor-pointer"
+                >
+                  <X size={10} />
+                </button>
+              </div>
+            ))}
+            <button
+              onClick={() => setActiveTab("preview")}
+              className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors cursor-pointer shrink-0 ${
+                activeTab === "preview"
+                  ? "text-text-primary border-blue-400"
+                  : "text-text-muted border-transparent hover:text-text-secondary"
+              }`}
+            >
+              Preview
+            </button>
+            <button
+              onClick={() => setActiveTab("distribute")}
+              className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors cursor-pointer shrink-0 ${
+                activeTab === "distribute"
+                  ? "text-text-primary border-purple-400"
+                  : "text-text-muted border-transparent hover:text-text-secondary"
+              }`}
+            >
+              Distribute
+            </button>
           </div>
-        )}
+
+          {/* Content */}
+          <div className="flex-1 min-h-0">
+            {activeTab === "skillmd" && (
+              <MonacoEditor
+                height="100%"
+                language="markdown"
+                theme="vs-dark"
+                value={skill.skillMd}
+                onChange={handleUpdateSkillMd}
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: 13,
+                  lineNumbers: "on",
+                  wordWrap: "on",
+                  scrollBeyondLastLine: false,
+                  padding: { top: 12 },
+                }}
+              />
+            )}
+
+            {activeTab === "preview" && (
+              <div className="h-full overflow-y-auto p-6">
+                <div className="prose prose-invert prose-sm max-w-none [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm [&_pre]:bg-bg-tertiary [&_pre]:border [&_pre]:border-border-default [&_code]:text-accent-orange">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {`---\nname: ${skill.name}\ndescription: ${skill.description}\n---\n\n${skill.skillMd}`}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "distribute" && (
+              <DistributionPanel skill={skill} onSaveLocal={handleSaveLocal} saving={saving} saveResult={saveResult} />
+            )}
+
+            {skill.scripts.map((s) =>
+              activeTab === s.filename ? (
+                <MonacoEditor
+                  key={s.filename}
+                  height="100%"
+                  language={getMonacoLanguage(s.filename)}
+                  theme="vs-dark"
+                  value={s.content}
+                  onChange={(value) => handleUpdateScript(s.filename, value)}
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 13,
+                    lineNumbers: "on",
+                    wordWrap: "off",
+                    scrollBeyondLastLine: false,
+                    padding: { top: 12 },
+                  }}
+                />
+              ) : null
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Distribution Panel Component
+function DistributionPanel({ skill, onSaveLocal, saving, saveResult }: {
+  skill: { name: string; description: string };
+  onSaveLocal: () => void;
+  saving: boolean;
+  saveResult: string | null;
+}) {
+  return (
+    <div className="h-full overflow-y-auto p-6">
+      <div className="max-w-xl mx-auto space-y-6">
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold text-text-primary flex items-center gap-2">
+            <Share2 size={18} className="text-purple-400" />
+            Distribution
+          </h2>
+          <p className="text-sm text-text-secondary">
+            Choose how to distribute <span className="font-mono text-text-primary">{skill.name}</span>
+          </p>
+        </div>
+
+        {/* Local */}
+        <div className="bg-bg-secondary border border-border-default rounded-xl p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <HardDrive size={16} className="text-green-400" />
+            <h3 className="text-sm font-semibold text-text-primary">Local</h3>
+            <span className="text-[10px] px-1.5 py-0.5 bg-green-500/10 text-green-400 rounded-md font-medium">Ready</span>
+          </div>
+          <p className="text-xs text-text-secondary">
+            Save to <span className="font-mono text-text-muted">~/.openclaw/workspace/skills/{skill.name}/</span>
+          </p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onSaveLocal}
+              disabled={saving}
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              {saving ? <Loader2 size={12} className="animate-spin" /> : <FolderDown size={12} />}
+              {saving ? "Saving..." : "Save to Local"}
+            </button>
+            {saveResult && (
+              <span className={`text-[10px] px-2 py-1 rounded ${saveResult.startsWith("Error") ? "bg-red-500/10 text-red-400" : "bg-green-500/10 text-green-400"}`}>
+                {saveResult}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Team */}
+        <div className="bg-bg-secondary border border-border-default rounded-xl p-5 space-y-3 opacity-60">
+          <div className="flex items-center gap-2">
+            <Users size={16} className="text-blue-400" />
+            <h3 className="text-sm font-semibold text-text-primary">Team</h3>
+            <span className="text-[10px] px-1.5 py-0.5 bg-bg-tertiary text-text-muted rounded-md font-medium">Coming Soon</span>
+          </div>
+          <p className="text-xs text-text-secondary">
+            Share privately with your organization via an internal skill registry.
+          </p>
+          <button
+            disabled
+            className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-bg-tertiary text-text-muted border border-border-default rounded-lg cursor-not-allowed"
+          >
+            <Users size={12} />
+            Share with Team
+          </button>
+        </div>
+
+        {/* ClawHub */}
+        <div className="bg-bg-secondary border border-border-default rounded-xl p-5 space-y-3 opacity-60">
+          <div className="flex items-center gap-2">
+            <Globe size={16} className="text-purple-400" />
+            <h3 className="text-sm font-semibold text-text-primary">ClawHub</h3>
+            <span className="text-[10px] px-1.5 py-0.5 bg-bg-tertiary text-text-muted rounded-md font-medium">Phase 3</span>
+          </div>
+          <p className="text-xs text-text-secondary">
+            Publish to the public ClawHub marketplace for the community.
+          </p>
+          <button
+            disabled
+            className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-bg-tertiary text-text-muted border border-border-default rounded-lg cursor-not-allowed"
+          >
+            <Globe size={12} />
+            Publish to ClawHub
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { pluginTools } from "@/lib/ai/tools";
+import { skillTools } from "@/lib/ai/tools";
 
 export async function POST(request: Request) {
   const apiKey = process.env.LABFORGE_ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY;
@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { messages, pluginContext } = await request.json();
+  const { messages, systemPrompt } = await request.json();
 
   if (!messages || !Array.isArray(messages)) {
     return new Response("Invalid request: messages array required", {
@@ -35,9 +35,9 @@ export async function POST(request: Request) {
         const response = await client.messages.create({
           model: "claude-sonnet-4-20250514",
           max_tokens: 4096,
-          system: pluginContext || "",
+          system: systemPrompt || "",
           messages: anthropicMessages,
-          tools: pluginTools,
+          tools: skillTools,
           stream: true,
         });
 

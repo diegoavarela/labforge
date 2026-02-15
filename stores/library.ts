@@ -1,84 +1,118 @@
 import { create } from "zustand";
 import { generateId } from "@/lib/utils/id";
-import type { LibraryStore, PluginData, SavedPlugin } from "@/types";
+import type { LibraryStore, SkillProjectData, SavedProject } from "@/types";
 
-interface DbPlugin {
+interface DbProject {
   id: string;
-  pluginName: string;
-  data: PluginData;
+  name: string;
+  pluginName?: string; // legacy compat
+  data: SkillProjectData;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-function hasContent(data: PluginData): boolean {
-  return (data.skills?.length + data.agents?.length + data.commands?.length + data.hooks?.length + data.mcps?.length) > 0;
+function hasContent(data: SkillProjectData): boolean {
+  return (data.skills?.length || 0) > 0;
 }
 
-function toSavedPlugin(row: DbPlugin): SavedPlugin {
+function toSavedProject(row: DbProject): SavedProject {
+  // Handle legacy data that may have old plugin fields
+  const rawData = row.data as unknown as Record<string, unknown>;
+  const data: SkillProjectData = {
+    skillName: (rawData.skillName as string) || (rawData.pluginName as string) || row.name || row.pluginName || "",
+    version: (rawData.version as string) || "0.1.0",
+    skills: migrateSkills((rawData.skills as unknown[]) || []),
+    changelog: (rawData.changelog as SkillProjectData["changelog"]) || [],
+  };
   return {
     id: row.id,
-    pluginName: row.pluginName,
+    skillName: data.skillName,
     updatedAt: new Date(row.updatedAt).getTime(),
-    data: row.data as PluginData,
+    data,
   };
+}
+
+/** Migrate old Skill format (content + files) to new (skillMd + scripts) */
+function migrateSkills(skills: unknown[]): import("@/types").Skill[] {
+  return (skills as Record<string, unknown>[]).map((s) => ({
+    id: (s.id as string) || generateId(),
+    name: (s.name as string) || "Untitled",
+    description: (s.description as string) || "",
+    skillMd: (s.skillMd as string) || (s.content as string) || "",
+    scripts: migrateScripts(s),
+    metadata: (s.metadata as Record<string, unknown>) || {},
+    source: ((s.source as string) || "local") as "local" | "registry",
+    sourceUrl: s.sourceUrl as string | undefined,
+  }));
+}
+
+function migrateScripts(s: Record<string, unknown>): import("@/types").ScriptFile[] {
+  // New format
+  if (Array.isArray(s.scripts)) return s.scripts as import("@/types").ScriptFile[];
+  // Old format: files array with {path, content, language}
+  if (Array.isArray(s.files)) {
+    return (s.files as { path: string; content: string; language: string }[]).map((f) => ({
+      filename: f.path,
+      content: f.content,
+      language: f.language || f.path.split(".").pop() || "bash",
+    }));
+  }
+  return [];
 }
 
 export const useLibraryStore = create<LibraryStore & { hydrate: () => Promise<void> }>()(
   (set, get) => ({
-    plugins: [],
-    activePluginId: null,
+    projects: [],
+    activeProjectId: null,
 
     hydrate: async () => {
       const [allRes, activeRes] = await Promise.all([
-        fetch("/api/plugins"),
-        fetch("/api/plugins/active"),
+        fetch("/api/skills"),
+        fetch("/api/skills/active"),
       ]);
-      const allRows: DbPlugin[] = await allRes.json();
-      const activeRow: DbPlugin | null = await activeRes.json();
+      const allRows: DbProject[] = await allRes.json();
+      const activeRow: DbProject | null = await activeRes.json();
       set({
-        plugins: allRows.map(toSavedPlugin),
-        activePluginId: activeRow?.id ?? null,
+        projects: allRows.map(toSavedProject),
+        activeProjectId: activeRow?.id ?? null,
       });
     },
 
-    saveCurrentPlugin: async (data: PluginData) => {
-      const { activePluginId, plugins } = get();
+    saveCurrentProject: async (data: SkillProjectData) => {
+      const { activeProjectId, projects } = get();
       const now = Date.now();
 
-      if (activePluginId) {
-        const existing = plugins.find((p) => p.id === activePluginId);
+      if (activeProjectId) {
+        const existing = projects.find((p) => p.id === activeProjectId);
         if (existing) {
-          // Update in-memory state always
           set({
-            plugins: plugins.map((p) =>
-              p.id === activePluginId
-                ? { ...p, pluginName: data.pluginName || "Untitled", updatedAt: now, data }
+            projects: projects.map((p) =>
+              p.id === activeProjectId
+                ? { ...p, skillName: data.skillName || "Untitled", updatedAt: now, data }
                 : p
             ),
           });
-          // Only persist to DB if plugin is already persisted (not a temp id) or has content
           if (!existing._localOnly) {
-            fetch(`/api/plugins/${activePluginId}`, {
+            fetch(`/api/skills/${activeProjectId}`, {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ pluginName: data.pluginName || "Untitled", data, isActive: true }),
+              body: JSON.stringify({ name: data.skillName || "Untitled", data, isActive: true }),
             });
           } else if (hasContent(data)) {
-            // First time this plugin has content — persist it now
-            const res = await fetch("/api/plugins", {
+            const res = await fetch("/api/skills", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ pluginName: data.pluginName || "Untitled", data, isActive: true }),
+              body: JSON.stringify({ name: data.skillName || "Untitled", data, isActive: true }),
             });
-            const row: DbPlugin = await res.json();
+            const row: DbProject = await res.json();
             set((s) => ({
-              activePluginId: row.id,
-              plugins: s.plugins.map((p) =>
-                p.id === activePluginId ? { ...toSavedPlugin(row), _localOnly: undefined } : p
+              activeProjectId: row.id,
+              projects: s.projects.map((p) =>
+                p.id === activeProjectId ? { ...toSavedProject(row), _localOnly: undefined } : p
               ),
             }));
-            fetch("/api/plugins/active", {
+            fetch("/api/skills/active", {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ id: row.id }),
@@ -88,92 +122,85 @@ export const useLibraryStore = create<LibraryStore & { hydrate: () => Promise<vo
         }
       }
 
-      // No active plugin — only create if there's content
       if (!hasContent(data)) return;
 
-      const res = await fetch("/api/plugins", {
+      const res = await fetch("/api/skills", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pluginName: data.pluginName || "Untitled", data, isActive: true }),
+        body: JSON.stringify({ name: data.skillName || "Untitled", data, isActive: true }),
       });
-      const row: DbPlugin = await res.json();
-      const saved = toSavedPlugin(row);
+      const row: DbProject = await res.json();
+      const saved = toSavedProject(row);
       set({
-        activePluginId: saved.id,
-        plugins: [...get().plugins, saved],
+        activeProjectId: saved.id,
+        projects: [...get().projects, saved],
       });
     },
 
-    loadPlugin: (id: string) => {
-      return get().plugins.find((p) => p.id === id);
+    loadProject: (id: string) => {
+      return get().projects.find((p) => p.id === id);
     },
 
-    deletePlugin: async (id: string) => {
-      const { plugins, activePluginId } = get();
+    deleteProject: async (id: string) => {
+      const { projects, activeProjectId } = get();
       set({
-        plugins: plugins.filter((p) => p.id !== id),
-        activePluginId: activePluginId === id ? null : activePluginId,
+        projects: projects.filter((p) => p.id !== id),
+        activeProjectId: activeProjectId === id ? null : activeProjectId,
       });
-      fetch(`/api/plugins/${id}`, { method: "DELETE" });
+      fetch(`/api/skills/${id}`, { method: "DELETE" });
     },
 
-    createNewPlugin: () => {
+    createNewProject: () => {
       const tempId = generateId();
       const now = Date.now();
-      const data: PluginData = {
-        pluginName: "",
+      const data: SkillProjectData = {
+        skillName: "",
         version: "0.1.0",
         skills: [],
-        agents: [],
-        commands: [],
-        hooks: [],
-        mcps: [],
         changelog: [],
-        dependencies: [],
       };
 
-      // Only add to local state — will be persisted to DB when it gets content
       set((s) => ({
-        activePluginId: tempId,
-        plugins: [...s.plugins, { id: tempId, pluginName: "Untitled", updatedAt: now, data, _localOnly: true }],
+        activeProjectId: tempId,
+        projects: [...s.projects, { id: tempId, skillName: "Untitled", updatedAt: now, data, _localOnly: true }],
       }));
 
       return tempId;
     },
 
-    setActivePluginId: (id: string | null) => {
-      set({ activePluginId: id });
-      fetch("/api/plugins/active", {
+    setActiveProjectId: (id: string | null) => {
+      set({ activeProjectId: id });
+      fetch("/api/skills/active", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       });
     },
 
-    importAsNewPlugin: (data: PluginData) => {
+    importAsNewProject: (data: SkillProjectData) => {
       const tempId = generateId();
       const now = Date.now();
 
       set((s) => ({
-        activePluginId: tempId,
-        plugins: [
-          ...s.plugins,
-          { id: tempId, pluginName: data.pluginName || "Untitled", updatedAt: now, data },
+        activeProjectId: tempId,
+        projects: [
+          ...s.projects,
+          { id: tempId, skillName: data.skillName || "Untitled", updatedAt: now, data },
         ],
       }));
 
-      fetch("/api/plugins", {
+      fetch("/api/skills", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pluginName: data.pluginName || "Untitled", data, isActive: true }),
+        body: JSON.stringify({ name: data.skillName || "Untitled", data, isActive: true }),
       })
         .then((r) => r.json())
-        .then((row: DbPlugin) => {
+        .then((row: DbProject) => {
           set((s) => ({
-            activePluginId: row.id,
-            plugins: s.plugins.map((p) => (p.id === tempId ? { ...p, id: row.id } : p)),
+            activeProjectId: row.id,
+            projects: s.projects.map((p) => (p.id === tempId ? { ...p, id: row.id } : p)),
           }));
-          fetch("/api/plugins/active", {
+          fetch("/api/skills/active", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id: row.id }),

@@ -1,21 +1,19 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { plugins } from "@/lib/db/schema";
+import { skills } from "@/lib/db/schema";
 import { desc } from "drizzle-orm";
 
-// GET /api/plugins — list all plugins
 export async function GET() {
-  const rows = await db.select().from(plugins).orderBy(desc(plugins.updatedAt));
+  const rows = await db.select().from(skills).orderBy(desc(skills.updatedAt));
   return NextResponse.json(rows);
 }
 
-// POST /api/plugins — create a new plugin
 export async function POST(req: Request) {
   const body = await req.json();
   const [row] = await db
-    .insert(plugins)
+    .insert(skills)
     .values({
-      pluginName: body.pluginName || "Untitled",
+      name: body.pluginName || body.name || "Untitled",
       data: body.data ?? {},
       isActive: body.isActive ?? false,
     })

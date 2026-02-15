@@ -8,13 +8,12 @@ import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import FileTreePreview from "./FileTreePreview";
-import { usePluginStore } from "@/stores/plugin";
-import { generatePluginStructure } from "@/lib/generator/plugin";
+import { useSkillStore } from "@/stores/skill";
+import { generateSkillStructure } from "@/lib/generator/skill";
 import { generateAndDownloadZip } from "@/lib/generator/zip";
-import { validatePlugin } from "@/lib/validator/plugin";
+import { validateSkill } from "@/lib/validator/skill";
 import ValidationReport from "./ValidationReport";
-import type { PluginFile } from "@/lib/generator/plugin";
-import type { ItemType } from "@/types";
+import type { SkillFile } from "@/lib/generator/skill";
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -22,11 +21,11 @@ interface ExportModalProps {
 }
 
 export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
-  const store = usePluginStore();
+  const store = useSkillStore();
   const { data: session } = useSession();
-  const githubRepo = usePluginStore((s) => s.githubRepo);
-  const [pluginName, setPluginName] = useState(store.pluginName || "my-plugin");
-  const [selectedFile, setSelectedFile] = useState<PluginFile | null>(null);
+  const githubRepo = useSkillStore((s) => s.githubRepo);
+  const [projectName, setProjectName] = useState(store.skillName || "my-skills");
+  const [selectedFile, setSelectedFile] = useState<SkillFile | null>(null);
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [copiedFile, setCopiedFile] = useState(false);
@@ -34,14 +33,10 @@ export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
   const [pushResult, setPushResult] = useState<{ url?: string; error?: string } | null>(null);
 
   const files = useMemo(() => {
-    return generatePluginStructure({
-      pluginName,
+    return generateSkillStructure({
+      skillName: projectName,
       version: store.version,
       skills: store.skills,
-      agents: store.agents,
-      commands: store.commands,
-      hooks: store.hooks,
-      mcps: store.mcps,
       selectedItemId: store.selectedItemId,
       selectedItemType: store.selectedItemType,
       theme: store.theme,
@@ -49,19 +44,14 @@ export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
       rightPanelCollapsed: store.rightPanelCollapsed,
       chatMessages: store.chatMessages,
       changelog: store.changelog,
-      dependencies: store.dependencies,
     });
-  }, [pluginName, store.version, store.skills, store.agents, store.commands, store.hooks, store.mcps, store.selectedItemId, store.selectedItemType, store.theme, store.inventoryCollapsed, store.rightPanelCollapsed, store.chatMessages, store.changelog, store.dependencies]);
+  }, [projectName, store.version, store.skills, store.selectedItemId, store.selectedItemType, store.theme, store.inventoryCollapsed, store.rightPanelCollapsed, store.chatMessages, store.changelog]);
 
   const validation = useMemo(() => {
-    return validatePlugin({
-      pluginName,
+    return validateSkill({
+      skillName: projectName,
       version: store.version,
       skills: store.skills,
-      agents: store.agents,
-      commands: store.commands,
-      hooks: store.hooks,
-      mcps: store.mcps,
       selectedItemId: store.selectedItemId,
       selectedItemType: store.selectedItemType,
       theme: store.theme,
@@ -69,29 +59,18 @@ export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
       rightPanelCollapsed: store.rightPanelCollapsed,
       chatMessages: store.chatMessages,
       changelog: store.changelog,
-      dependencies: store.dependencies,
     });
-  }, [pluginName, store.version, store.skills, store.agents, store.commands, store.hooks, store.mcps, store.selectedItemId, store.selectedItemType, store.theme, store.inventoryCollapsed, store.rightPanelCollapsed, store.chatMessages, store.changelog, store.dependencies]);
+  }, [projectName, store.version, store.skills, store.selectedItemId, store.selectedItemType, store.theme, store.inventoryCollapsed, store.rightPanelCollapsed, store.chatMessages, store.changelog]);
 
   const handleDownload = useCallback(async () => {
     setDownloading(true);
     try {
-      store.setPluginName(pluginName);
-      await generateAndDownloadZip(pluginName, files);
+      store.setSkillName(projectName);
+      await generateAndDownloadZip(projectName, files);
     } finally {
       setDownloading(false);
     }
-  }, [pluginName, files, store]);
-
-  const handleCopyInstall = useCallback(() => {
-    const slug = pluginName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "");
-    copyToClipboard(`claude plugin add github:user/${slug}`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [pluginName]);
+  }, [projectName, files, store]);
 
   const handlePush = useCallback(async () => {
     if (!githubRepo) return;
@@ -122,23 +101,18 @@ export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
   }, [githubRepo, files]);
 
   const pushDisabled = !session || !githubRepo;
-  const pushTooltip = !session
-    ? "Login required"
-    : !githubRepo
-      ? "Select a repo first"
-      : null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Export Plugin" size="3xl">
+    <Modal isOpen={isOpen} onClose={onClose} title="Export Skills" size="3xl">
       <div className="space-y-4">
         <div>
           <label className="block text-xs font-medium text-text-muted mb-1">
-            Plugin Name
+            Project Name
           </label>
           <Input
-            value={pluginName}
-            onChange={(value) => setPluginName(value)}
-            placeholder="my-plugin"
+            value={projectName}
+            onChange={(value) => setProjectName(value)}
+            placeholder="my-skills"
           />
         </div>
 
@@ -190,12 +164,12 @@ export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
         <ValidationReport
           report={validation}
           onNavigate={(id, type) => {
-            store.selectItem(id, type as ItemType);
+            store.selectItem(id, type as "skill");
             onClose();
           }}
         />
 
-        <div className="grid grid-cols-3 gap-3 pt-3 border-t border-border-default">
+        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-border-default">
           <Button
             variant="primary"
             size="sm"
@@ -207,27 +181,15 @@ export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
             {downloading ? "Generating..." : !validation.isValid ? "Fix errors to export" : "Download ZIP"}
           </Button>
 
-          <div className="relative group">
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={pushDisabled || pushing}
-              onClick={handlePush}
-              className="w-full"
-            >
-              <Github size={14} />
-              {pushing ? "Pushing..." : githubRepo ? `Push to ${githubRepo.split("/")[1]}` : "Push to GitHub"}
-            </Button>
-            {pushTooltip && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-bg-tertiary border border-border-default rounded-lg text-[10px] text-text-muted whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
-                {pushTooltip}
-              </div>
-            )}
-          </div>
-
-          <Button variant="secondary" size="sm" onClick={handleCopyInstall} className="w-full">
-            {copied ? <Check size={14} /> : <Copy size={14} />}
-            {copied ? "Copied!" : "Copy Install"}
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={pushDisabled || pushing}
+            onClick={handlePush}
+            className="w-full"
+          >
+            <Github size={14} />
+            {pushing ? "Pushing..." : githubRepo ? `Push to ${githubRepo.split("/")[1]}` : "Push to GitHub"}
           </Button>
         </div>
 

@@ -1,10 +1,10 @@
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import type { PluginFile } from "./plugin";
+import type { SkillFile } from "./skill";
 
 export async function generateAndDownloadZip(
-  pluginName: string,
-  files: PluginFile[]
+  projectName: string,
+  files: SkillFile[]
 ): Promise<void> {
   const zip = new JSZip();
 
@@ -13,9 +13,9 @@ export async function generateAndDownloadZip(
   }
 
   const blob = await zip.generateAsync({ type: "blob" });
-  const safeName = pluginName
+  const safeName = projectName
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
-  saveAs(blob, `${safeName || "plugin"}.zip`);
+  saveAs(blob, `${safeName || "skills"}.zip`);
 }
