@@ -1,15 +1,18 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Sparkles, Plus, X, FileText, Code, Eye, FolderDown, Check, Loader2, Share2, Globe, Users, HardDrive } from "lucide-react";
+import { Sparkles, Plus, X, FileText, Code, Eye, FolderDown, Check, Loader2, Share2, Globe, Users, HardDrive, Workflow, FlaskConical, Download, Upload, Package } from "lucide-react";
 import dynamic from "next/dynamic";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useSkillStore } from "@/stores/skill";
 import { generateId } from "@/lib/utils/id";
 import type { ScriptFile } from "@/types";
+import TestPanel from "@/components/testing/TestPanel";
+import PublishModal from "@/components/marketplace/PublishModal";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
+const FlowEditor = dynamic(() => import("@/components/flow/FlowEditor"), { ssr: false });
 
 function getMonacoLanguage(filename: string): string {
   const ext = filename.split(".").pop()?.toLowerCase() || "";
@@ -28,15 +31,17 @@ function getMonacoLanguage(filename: string): string {
   return map[ext] || "plaintext";
 }
 
-type Tab = "skillmd" | "preview" | "distribute" | string;
+type Tab = "skillmd" | "preview" | "distribute" | "test" | string;
 
 export default function SkillCanvas({ skillId }: { skillId: string }) {
   const skill = useSkillStore((s) => s.skills.find((sk) => sk.id === skillId));
   const updateSkill = useSkillStore((s) => s.updateSkill);
 
+  const version = useSkillStore((s) => s.version);
   const [activeTab, setActiveTab] = useState<Tab>("skillmd");
   const [saving, setSaving] = useState(false);
   const [saveResult, setSaveResult] = useState<string | null>(null);
+  const [showPublish, setShowPublish] = useState(false);
 
   const handleUpdateSkillMd = useCallback((value: string | undefined) => {
     if (value !== undefined) updateSkill(skillId, { skillMd: value });
@@ -175,6 +180,17 @@ export default function SkillCanvas({ skillId }: { skillId: string }) {
               <span>Preview</span>
             </button>
             <button
+              onClick={() => setActiveTab("flow")}
+              className={`w-full flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors cursor-pointer ${
+                activeTab === "flow"
+                  ? "bg-bg-hover text-text-primary"
+                  : "text-text-secondary hover:bg-bg-hover hover:text-text-primary"
+              }`}
+            >
+              <Workflow size={11} />
+              <span>Flow</span>
+            </button>
+            <button
               onClick={() => setActiveTab("distribute")}
               className={`w-full flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors cursor-pointer ${
                 activeTab === "distribute"
@@ -184,6 +200,17 @@ export default function SkillCanvas({ skillId }: { skillId: string }) {
             >
               <Share2 size={11} />
               <span>Distribute</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("test")}
+              className={`w-full flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors cursor-pointer ${
+                activeTab === "test"
+                  ? "bg-bg-hover text-text-primary"
+                  : "text-text-secondary hover:bg-bg-hover hover:text-text-primary"
+              }`}
+            >
+              <FlaskConical size={11} />
+              <span>Test</span>
             </button>
             <div className="border-t border-border-default mt-2 pt-2">
               <button
@@ -242,6 +269,16 @@ export default function SkillCanvas({ skillId }: { skillId: string }) {
               Preview
             </button>
             <button
+              onClick={() => setActiveTab("flow")}
+              className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors cursor-pointer shrink-0 ${
+                activeTab === "flow"
+                  ? "text-text-primary border-green-400"
+                  : "text-text-muted border-transparent hover:text-text-secondary"
+              }`}
+            >
+              Flow
+            </button>
+            <button
               onClick={() => setActiveTab("distribute")}
               className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors cursor-pointer shrink-0 ${
                 activeTab === "distribute"
@@ -250,6 +287,16 @@ export default function SkillCanvas({ skillId }: { skillId: string }) {
               }`}
             >
               Distribute
+            </button>
+            <button
+              onClick={() => setActiveTab("test")}
+              className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors cursor-pointer shrink-0 ${
+                activeTab === "test"
+                  ? "text-text-primary border-amber-400"
+                  : "text-text-muted border-transparent hover:text-text-secondary"
+              }`}
+            >
+              Test
             </button>
           </div>
 
@@ -283,8 +330,19 @@ export default function SkillCanvas({ skillId }: { skillId: string }) {
               </div>
             )}
 
+            {activeTab === "flow" && (
+              <FlowEditor
+                skillMd={skill.skillMd}
+                onSkillMdChange={(md) => updateSkill(skillId, { skillMd: md })}
+              />
+            )}
+
             {activeTab === "distribute" && (
-              <DistributionPanel skill={skill} onSaveLocal={handleSaveLocal} saving={saving} saveResult={saveResult} />
+              <DistributionPanel skill={skill} onSaveLocal={handleSaveLocal} saving={saving} saveResult={saveResult} onPublish={() => setShowPublish(true)} />
+            )}
+
+            {activeTab === "test" && (
+              <TestPanel skill={skill} version={version} />
             )}
 
             {skill.scripts.map((s) =>
@@ -310,6 +368,14 @@ export default function SkillCanvas({ skillId }: { skillId: string }) {
           </div>
         </div>
       </div>
+      {showPublish && (
+        <PublishModal
+          isOpen={showPublish}
+          onClose={() => setShowPublish(false)}
+          skill={skill}
+          version={version}
+        />
+      )}
     </div>
   );
 }
