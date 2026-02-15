@@ -1,10 +1,13 @@
 "use client";
 
-import { Trash2, Plus } from "lucide-react";
+import { useState } from "react";
+import { Trash2, Plus, Upload } from "lucide-react";
 import { useLibraryStore } from "@/stores/library";
 import { useSkillStore } from "@/stores/skill";
+import ImportModal from "./ImportModal";
 
 export default function LibraryPanel() {
+  const [importOpen, setImportOpen] = useState(false);
   const projects = useLibraryStore((s) => s.projects);
   const activeProjectId = useLibraryStore((s) => s.activeProjectId);
   const saveCurrentProject = useLibraryStore((s) => s.saveCurrentProject);
@@ -51,13 +54,24 @@ export default function LibraryPanel() {
 
   return (
     <div className="flex-1 overflow-y-auto p-2 space-y-2">
-      <button
-        onClick={handleNewProject}
-        className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] text-text-secondary border border-dashed border-border-default rounded-lg hover:bg-bg-hover hover:text-text-primary transition-colors cursor-pointer"
-      >
-        <Plus size={12} />
-        New Project
-      </button>
+      <div className="flex gap-1.5">
+        <button
+          onClick={handleNewProject}
+          className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] text-text-secondary border border-dashed border-border-default rounded-lg hover:bg-bg-hover hover:text-text-primary transition-colors cursor-pointer"
+        >
+          <Plus size={12} />
+          New
+        </button>
+        <button
+          onClick={() => setImportOpen(true)}
+          className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] text-text-secondary border border-dashed border-border-default rounded-lg hover:bg-bg-hover hover:text-text-primary transition-colors cursor-pointer"
+        >
+          <Upload size={12} />
+          Import
+        </button>
+      </div>
+
+      <ImportModal isOpen={importOpen} onClose={() => setImportOpen(false)} />
 
       {sorted.length === 0 && (
         <p className="text-[11px] text-text-muted text-center py-4">
